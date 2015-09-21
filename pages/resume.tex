@@ -1,0 +1,99 @@
+\documentclass{letter}
+
+\textheight=10in
+\textwidth=7.3in
+\topmargin=-1.0in
+\headheight=0.2in
+\headsep=0.2in
+\oddsidemargin=-0.5in
+\evensidemargin=-0.9in
+\marginparpush=1in
+\marginparsep=1in
+\marginparwidth=1in
+\footskip=0in
+
+\parindent=0in
+
+\newcommand{\experience}[4]{&& \\
+\textit{#1} \hspace{0.2in} & \textbf{#2} & \textbf{#3} \\
+& \textit{#4} & \\}
+\newcommand{\subexperience}[1]{& #1 & \\}
+
+\newcommand{\education}[3]{\hspace{0.5in}\textbf{#1, #2 (#3)}\\}
+\newcommand{\subeducation}[1]{\hspace{1in}#1\\}
+
+\begin{document}
+\thispagestyle{empty}
+
+\LARGE
+\begin{center}Palmer Dabbelt\end{center}
+\normalsize
+
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l r}
+  Berkeley, CA& 312-725-0319 \\
+  94709 & palmer@dabbelt.com \\
+  \hline
+\end{tabular*}\\
+\vspace{0.2in}
+
+\textbf{Experience}\\
+\begin{tabular*}{\textwidth}{l l @{\extracolsep{\fill}} r}
+  \experience{2011-2013}{Tilera}{Westborough, MA}{Software Engineer}
+  \subexperience{Ported the Hotspot JVM to Tilera's Tile-Gx processors}
+
+  \experience{2009-11}{Nuvixa}{Champaign, IL}{Software Engineer}
+  \subexperience{Startup doing depth assisted image processing}
+  \subexperience{Optimization of code for x86 processors}
+  \subexperience{Network video streaming protocol}
+  
+  \experience{2009-11}{ECE391 Lab TA}{Champaign, IL}{Lab TA (Class Title: Computer Systems Engineering)}
+  \subexperience{Write a single user, multi tasking (with virtual memory) OS}
+  \subexperience{I help students with debugging code and learn concepts}
+\end{tabular*}\\
+\vspace{0.2in}
+
+\textbf{Projects}
+\begin{itemize}
+\item Ported the Hotspot JVM (and Sun's OpenJDK) to Tilera's Tile-Gx
+  processors.  Our team consisted of two people.  I started mid-way
+  through the process, with a functional port of Hotspot's interpreter
+  to Tile-Pro (the previous generation of Tilera chips), but I the two
+  of us ported Hotspot's interpreter and the C2 server compiler to
+  Tile-Gx.
+\item Created a superscalar out of order implementation of the LC3b
+  processor in VHDL.  The processor has split L1 caches and a unified
+  L2 cache.  It uses Tomasulu's algorithm to achieve out of order
+  execution.  This was a group project which ended up winning me the
+  411 design competiton.
+\item Single user cluster operating system using serial interconnects
+  for x86.  Written in C and x86 ASM.  In addition, for this project I
+  wrote an implementation of packet-switched networking over serial
+  ports, a network aware scheduler, synchronization constructs, and an
+  implementation of shared memory over the network.  This project won
+  me honorable mention in the ECE391 Programming Contest.
+\item Created and implemented a real-time video streaming protocol
+  over UDP on GNU/Linux.  Written in C.  In addition, I wrote code to
+  interface with V4L USB video capture on Linux and code to interface
+  with OpenGL on Linux.
+\item Created and implemented a real-time background subtraction
+  algorithm using depth cameras.  I wrote an implementation using C on
+  GNU/Linux and am currently working on an implementation using C++ on
+  Win32, which will be commercial quality code.  I have a patent on
+  this algorithm.
+\end{itemize}
+
+\textbf{Awards}
+\begin{itemize}
+\item $4^{\mathrm{th}}$ in ECE498 (CUDA) Programming Contest, Spring 2010
+\item Won ECE411 Design Competiton, Fall 2009
+\item Honorable Mention in ECE391 Programming Contest, Spring 2009
+\end{itemize}
+\vspace{0.2in}
+
+\textbf{Education}\\
+\begin{tabular*}{\textwidth}{l l @{\extracolsep{\fill}} r}
+  \experience{August 2012 - current}{University of California}{Berkeley, CA}{PhD Computer Science}
+  \experience{August 2008 - June 2011}{University of Illinois}{Champaign, IL}{BS Computer Engineering, Engineering Physics}
+  \subexperience{GPA: 3.6}
+\end{tabular*}
+\end{document}

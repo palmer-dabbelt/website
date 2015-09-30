@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Palmer Dabbelt's Research Log</title>
+  </head>
+  <body>
+    {% block listing %}
+    <a href="rlog/{{ FILENAME }}.html"><h3>{{ DATE }}: {{ PROJECT }}</h3></a>
+    {{ CONTENT }}
+    {% endblock %}
+  </body>
+</html>

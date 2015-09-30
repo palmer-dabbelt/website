@@ -17,15 +17,19 @@ all: \
 	$(addsuffix .html,$(addprefix $(BUILD)/,$(PAGES))) \
 	$(addprefix $(BUILD)/,$(ASSETS)) \
 	$(BUILD)/index.html \
+	$(BUILD)/research_log.html \
 	$(BUILD)/resume.pdf
 
 # Builds HTML pages using blogc
-$(BUILD)/%.html: pages/%.md templates/pages.html
+$(BUILD)/%.html: pages/%.md templates/*.html
 	mkdir -p $(dir $@)
-	$(BLOGC) \
-		-o $@ \
-		-t templates/pages.html \
-		$<
+	$(BLOGC) -o $@ -t templates/$(lastword $(subst /, ,$(dir $<))).html $<
+
+# This is a front page for my research log, which contains a list of
+# all of them.
+$(BUILD)/research_log.html: pages/rlog/*.md templates/research_log.html
+	mkdir -p $(dir $@)
+	find pages/rlog/*.md | sort --reverse | xargs $(BLOGC) -o $@ -t templates/research_log.html -l
 
 # Builds PDF pages using pdflatex
 $(BUILD)/%.pdf: pages/%.tex

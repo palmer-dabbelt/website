@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>{% block entry %}Palmer Dabbelt's Research Log: {{ DATE }}{% endblock %}</title>
+  </head>
+  <body>
+    {% block entry %}
+    <h2>{{ DATE }}: {{ PROJECT }}</h2>
+    {{ CONTENT }}
+    {% endblock %}
+  </body>
+</html>

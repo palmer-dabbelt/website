@@ -56,7 +56,9 @@ Additionally, I have been involved in a number of previous projects
   algorithm taking advantage consumer of depth cameras. This research
   spawned [Personify](http://personify.com) (formally Nuvixa). [2009-2010]
 
-In my spare time, I work on a number of open source projects.
+In my spare time, I work on a number of open source projects.  I keep
+my [research log](research_log.html) online, but they're mostly just
+for me so I can remember what I'm doing.
 
 ## Teaching
 

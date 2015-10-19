@@ -4,6 +4,7 @@ LOCALE = "en_US.utf-8"
 
 BLOGC ?= $(shell which blogc 2> /dev/null)
 INSTALL ?= $(shell which rsync 2> /dev/null)
+WGET ?= $(shell which wget 2> /dev/null)
 PDFLATEX ?= $(shell which pdflatex 2> /dev/null)
 OUTPUT_DIR ?= build
 BASE_DOMAIN ?= http://www.dabbelt.com/~palmer/
@@ -21,12 +22,36 @@ all: \
 	$(BUILD)/research_log.html \
 	$(BUILD)/resume.pdf
 
+# Ensure I actually have the required program, if I don't then install thems
+ifeq ($(BLOGC),)
+BLOGC := tools/bin/blogc
+endif
+
+BLOGC_VERSION ?= 0.3
+BLOGC_URL ?= https://github.com/blogc/blogc/releases/download/v$(BLOGC_VERSION)/blogc-$(BLOGC_VERSION).tar.gz
+tools/bin/blogc: tools/src/blogc/build/blogc
+	mkdir -p $(dir $@)
+	cp -f $< $@
+tools/src/blogc/build/blogc: tools/src/blogc/build/Makefile
+	$(MAKE) -C $(dir $@)
+tools/src/blogc/build/Makefile: tools/src/blogc/stamp
+	rm -rf $(dir $@)
+	mkdir -p $(dir $@)
+	cd $(dir $@) && ../configure
+tools/src/blogc/stamp: tools/src/blogc-$(BLOGC_VERSION).tar.gz
+	mkdir -p $(dir $@)
+	tar -xzC $(dir $@) -f $< --strip-components=1
+	touch $@
+tools/src/blogc-$(BLOGC_VERSION).tar.gz:
+	mkdir -p $(dir $@)
+	$(WGET) $(BLOGC_URL) -O $@
+
 ifeq ($(PDFLATEX),)
 $(error "I'm not going to install pdflatex for you, it's tricky!")
 endif
 
 # Builds HTML pages using blogc
-$(BUILD)/%.html: pages/%.md templates/*.html
+$(BUILD)/%.html: pages/%.md templates/*.html $(BLOGC)
 	mkdir -p $(dir $@)
 	$(BLOGC) -o $@ -t templates/$(lastword $(subst /, ,$(dir $<))).html $<
 

@@ -2,8 +2,8 @@ AUTHOR_NAME = "Palmer Dabbelt"
 AUTHOR_EMAIL = "palmer@dabbelt.com"
 LOCALE = "en_US.utf-8"
 
-BLOGC ?= $(shell which blogc)
-INSTALL ?= $(shell which rsync)
+BLOGC ?= $(shell which blogc 2> /dev/null)
+INSTALL ?= $(shell which rsync 2> /dev/null)
 PDFLATEX ?= $(shell which pdflatex 2> /dev/null)
 OUTPUT_DIR ?= build
 BASE_DOMAIN ?= http://www.dabbelt.com/~palmer/

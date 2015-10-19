@@ -4,6 +4,7 @@ LOCALE = "en_US.utf-8"
 
 BLOGC ?= $(shell which blogc)
 INSTALL ?= $(shell which rsync)
+PDFLATEX ?= $(shell which pdflatex 2> /dev/null)
 OUTPUT_DIR ?= build
 BASE_DOMAIN ?= http://www.dabbelt.com/~palmer/
 BUILD ?= build
@@ -19,6 +20,10 @@ all: \
 	$(BUILD)/index.html \
 	$(BUILD)/research_log.html \
 	$(BUILD)/resume.pdf
+
+ifeq ($(PDFLATEX),)
+$(error "I'm not going to install pdflatex for you, it's tricky!")
+endif
 
 # Builds HTML pages using blogc
 $(BUILD)/%.html: pages/%.md templates/*.html

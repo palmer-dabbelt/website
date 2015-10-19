@@ -86,6 +86,10 @@ $(BUILD)/index.html: $(BUILD)/about.html
 .PHONY: clean
 clean:
 	rm -rf build .latex_cache
+.PHONY: distclean
+distclean:
+	$(MAKE) clean
+	rm -rf tools
 
 # Installs the currenty copy of the website on all the servers that I
 # store it on.

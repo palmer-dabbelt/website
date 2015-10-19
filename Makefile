@@ -53,7 +53,7 @@ $(BUILD)/%.html: pages/%.md templates/*.html $(BLOGC)
 
 # This is a front page for my research log, which contains a list of
 # all of them.
-$(BUILD)/research_log.html: pages/rlog/*.md templates/research_log.html
+$(BUILD)/research_log.html: pages/rlog/*.md templates/research_log.html $(BLOGC)
 	mkdir -p $(dir $@)
 	find pages/rlog/*.md | sort --reverse | xargs $(BLOGC) -o $@ -t templates/research_log.html -l
 

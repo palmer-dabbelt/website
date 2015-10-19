@@ -46,10 +46,6 @@ tools/src/blogc-$(BLOGC_VERSION).tar.gz:
 	mkdir -p $(dir $@)
 	$(WGET) $(BLOGC_URL) -O $@
 
-ifeq ($(PDFLATEX),)
-$(error "I'm not going to install pdflatex for you, it's tricky!")
-endif
-
 # Builds HTML pages using blogc
 $(BUILD)/%.html: pages/%.md templates/*.html $(BLOGC)
 	mkdir -p $(dir $@)
@@ -61,12 +57,19 @@ $(BUILD)/research_log.html: pages/rlog/*.md templates/research_log.html
 	mkdir -p $(dir $@)
 	find pages/rlog/*.md | sort --reverse | xargs $(BLOGC) -o $@ -t templates/research_log.html -l
 
-# Builds PDF pages using pdflatex
-$(BUILD)/%.pdf: pages/%.tex
+# Builds PDF pages using pdflatex, or just fetches them if that's not
+# installed.  Since these don't change a whole lot this should be OK...
+ifeq ($(PDFLATEX),)
+$(BUILD)/%.pdf:
+	mkdir -p $(dir $@)
+	$(WGET) http://www.dabbelt.com/~palmer/$(subst $(BUILD),,$@) -O $@
+else
+$(BUILD)/%.pdf: pages/%.tex $(PDFLATEX)
 	mkdir -p .latex_cache
 	cp $^ .latex_cache
 	cd .latex_cache; pdflatex -interaction=batchmode $(notdir $^) >& /dev/null
 	cp .latex_cache/$(notdir $@) $@
+endif
 
 # Assets are copied directly from the repository
 $(BUILD)/assets/%: assets/%

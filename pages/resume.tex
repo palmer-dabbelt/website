@@ -18,6 +18,7 @@
 \textit{#1} \hspace{0.2in} & \textbf{#2} & \textbf{#3} \\
 & \textit{#4} & \\}
 \newcommand{\subexperience}[1]{& #1 & \\}
+\newcommand{\subsubexperience}[1]{& #1 & \\}
 
 \newcommand{\education}[3]{\hspace{0.5in}\textbf{#1, #2 (#3)}\\}
 \newcommand{\subeducation}[1]{\hspace{1in}#1\\}
@@ -38,6 +39,11 @@
 
 \textbf{Experience}\\
 \begin{tabular*}{\textwidth}{l l @{\extracolsep{\fill}} r}
+  \experience{2013-2014}{CS194-24 TA}{Berkeley, CA}{TA (Class Title: Operating Systems)}
+  \subexperience{The course is really "intro to Linux hacking", some QEMU development}
+  \subexperience{Wrote labs, ran discussion section, wrote/graded exams}
+  \subexperience{Labs: HTTP server, file system, scheduler, ethernet driver}
+
   \experience{2011-2013}{Tilera}{Westborough, MA}{Software Engineer}
   \subexperience{Ported the Hotspot JVM to Tilera's Tile-Gx processors}
 
@@ -54,6 +60,9 @@
 
 \textbf{Projects}
 \begin{itemize}
+\item Maintain and am in the process of upstreaming the RISC-V GNU toolchain
+  (binutils, GCC, glibc).  I also work on the RISC-V Gentoo port, and am
+  building a RISC-V DSP chip.
 \item Ported the Hotspot JVM (and Sun's OpenJDK) to Tilera's Tile-Gx
   processors.  Our team consisted of two people.  I started mid-way
   through the process, with a functional port of Hotspot's interpreter
@@ -84,6 +93,7 @@
 
 \textbf{Awards}
 \begin{itemize}
+\item EE Times "Design Team of the Year" awarded to Tilera, 2012
 \item $4^{\mathrm{th}}$ in ECE498 (CUDA) Programming Contest, Spring 2010
 \item Won ECE411 Design Competiton, Fall 2009
 \item Honorable Mention in ECE391 Programming Contest, Spring 2009

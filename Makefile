@@ -66,8 +66,8 @@ $(BUILD)/%.pdf:
 else
 $(BUILD)/%.pdf: pages/%.tex $(PDFLATEX)
 	mkdir -p .latex_cache
-	cp $^ .latex_cache
-	cd .latex_cache; pdflatex -interaction=batchmode $(notdir $^) >& /dev/null
+	cp $< .latex_cache
+	cd .latex_cache; $(PDFLATEX) -interaction=batchmode $(notdir $<) >& /dev/null
 	cp .latex_cache/$(notdir $@) $@
 endif
 

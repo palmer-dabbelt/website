@@ -32,6 +32,10 @@ I can be reached by
 also uploaded my [resume](resume.pdf), but since I'm not currently
 looking for a job it's probably fairly out of date.
 
+If you're looking for me to get something done, then the best way to go about
+this is to submit a pull request against my [TODO
+list](http://github.com/palmer-dabbelt/home/).
+
 ## Projects
 
 I am currently working on the following projects

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Open Source Contributions</title>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-52227532-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+  </head>
+  <body>
+    <h1>Open Source Contributions</h1>
+    <p> This page contains a list of the contributions I've made to open source
+    projects.  It's mostly here so I can track things I've done. </p>
+
+    <h2>Patch Sets in Progress</h2>
+
+{% block listing %}
+  {% if STATUS == "writing" %}
+    <h3>{{PROJECT}}: {{CONTRIBUTION}}</h3>
+    Start Date: {{STARTDATE}}<br/>
+    <p>{{ CONTENT }}</p>
+  {% endif %}
+{% endblock %}
+  </body>
+</html>

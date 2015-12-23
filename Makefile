@@ -19,6 +19,7 @@ all: \
 	$(addsuffix .html,$(addprefix $(BUILD)/,$(PAGES))) \
 	$(addprefix $(BUILD)/,$(ASSETS)) \
 	$(BUILD)/index.html \
+	$(BUILD)/contributions.html \
 	$(BUILD)/resume.pdf
 
 # Ensure I actually have the required program, if I don't then install thems
@@ -49,6 +50,12 @@ tools/src/blogc-$(BLOGC_VERSION).tar.gz:
 $(BUILD)/%.html: pages/%.md templates/*.html $(BLOGC)
 	mkdir -p $(dir $@)
 	$(BLOGC) -o $@ -t templates/$(lastword $(subst /, ,$(dir $<))).html $<
+
+# This is a front page for my research log, which contains a list of
+# all of them.
+$(BUILD)/contributions.html: $(wildcard pages/contributions/*.md) templates/contributions.html $(BLOGC)
+	mkdir -p $(dir $@)
+	find pages/contributions/*.md | sort --reverse | xargs $(BLOGC) -o $@ -t templates/contributions.html -l
 
 # Builds PDF pages using pdflatex, or just fetches them if that's not
 # installed.  Since these don't change a whole lot this should be OK...

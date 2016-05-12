@@ -12,12 +12,14 @@ BUILD ?= build
 
 PAGES = $(subst pages/,,$(subst .md,,$(shell find pages/ -iname "*.md")))
 ASSETS = $(shell find assets -type f)
+KEEP = $(shell find keep -type f)
 
 # A generic target to build everything in my website.  This target
 # must come first!
 all: \
 	$(addsuffix .html,$(addprefix $(BUILD)/,$(PAGES))) \
 	$(addprefix $(BUILD)/,$(ASSETS)) \
+	$(addprefix $(BUILD)/,$(KEEP)) \
 	$(BUILD)/index.html \
 	$(BUILD)/contributions.html \
 	$(BUILD)/resume.pdf
@@ -73,6 +75,10 @@ endif
 
 # Assets are copied directly from the repository
 $(BUILD)/assets/%: assets/%
+	mkdir -p $(dir $@)
+	cp $< $@
+
+$(BUILD)/keep/%: keep/%
 	mkdir -p $(dir $@)
 	cp $< $@
 

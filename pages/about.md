@@ -61,7 +61,7 @@ Additionally, I have been involved in a number of previous projects
   spawned [Personify](http://personify.com) (formally Nuvixa). [2009-2010]
 
 In my spare time, I work on a number of open source projects.  I try to keep my
-(list of open source contributions)[contributions.html] current, but sometimes
+[list of open source contributions](contributions.html) current, but sometimes
 things get lost.
 
 ## Teaching

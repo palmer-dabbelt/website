@@ -28,5 +28,16 @@
     <p>{{ CONTENT }}</p>
   {% endif %}
 {% endblock %}
+
+  <h2>Patch Sets Submitted for Review</h2>
+
+{% block listing %}
+  {% if STATUS == "submitted" %}
+    <h3>{{PROJECT}}: {{CONTRIBUTION}}</h3>
+    Start Date: {{STARTDATE}}<br/>
+    Date Submitted: {{SUBMITDATE}}<br/>
+    <p>{{ CONTENT }}</p>
+  {% endif %}
+{% endblock %}
   </body>
 </html>

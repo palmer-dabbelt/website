@@ -42,3 +42,9 @@ action="http://wiki.teamliquid.net/starcraft/index.php">
 
 [TeamLiquid.net](http://www.teamliquid.net):
 [Subscribed](http://www.teamliquid.net/mytlnet/mythreads.php)
+
+[GitHub.com](https://www.github.com/palmer-dabbelt/):
+[riscv-gnu-toolchain](https://www.github.com/riscv/riscv-gnu-toolchain)
+
+[travis-ci.org](https://travis-ci.org/):
+[riscv-gnu-toolchain](https://travis-ci.org/riscv/riscv-gnu-toolchain)

@@ -5,21 +5,18 @@ TITLE: Palmer Dabbelt's Homepage
 
 ![A photo of me](assets/me.jpeg)
 
-I am a fourth year Ph.D student in [Computer
-Science](http://eecs.berkeley.edu) at the [University of California:
-Berkeley](http://berkeley.edu), being advised by [Krste
-Asanovic](http://www.eecs.berkeley.edu/~krste/) and [Jonathan
-Bachrach](http://www.eecs.berkeley.edu/~jrb/).  I am currently a
-member of the [ASPIRE](http://aspire.eecs.berkeley.edu) project.  My
-office is currently located in the ASPIRE lab (previously the Par
-Lab), which is on the 5th floor of Soda Hall.  As there aren't really
-room numbers, I've highlighted a [map](assets/parlab_seat.png).
+I am currently finishing my masters' thesis and will be employed by
+[SiFive](http://sifive.com) starting March 1st.
 
 I graduated in 2011 from the [University of Illinois at
 Urbana-Champaign](http://illinois.edu/) with a B.S. in Electrical and
 Computer Engineering, where I was advised by [Sanjay
 Patel](http://users.crhc.illinois.edu/sjp/) and [Steve
-Lumetta](http://users.crhc.illinois.edu/steve/).
+Lumetta](http://users.crhc.illinois.edu/steve/).  I will soon from the
+[University of California: Berkeley](http://berkeley.edu) with a M.S in
+Computer Science, where I was advised by [Krste
+Asanovic](https://people.eecs.berkeley.edu/~krste/) and [Jonathan
+Bachrach](https://people.eecs.berkeley.edu/~jrb/).
 
 My [calendar](calendar.html) is availiable online and is
 generally kept up-to-date. Unless otherwise specified, blue events are
@@ -40,10 +37,10 @@ list](http://github.com/palmer-dabbelt/home/).
 
 I am currently working on the following projects
 
-* Hurricane: a multicore RISC-V implementation designed for power
-  efficient DSP.
-
 Additionally, I have been involved in a number of previous projects
+
+* Hurricane: a multicore RISC-V implementation designed for power
+  efficient DSP.  This project resulted in a chip on ST's 28nm FDSOI.
 
 * DREAMER, a coarse grained reconfigurable architecture designed for
   high speed circuit emulation. The goal of DREAMER is to reduce the

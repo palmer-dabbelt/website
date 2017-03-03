@@ -52,10 +52,6 @@ Here's a list of the projects I have worked on in the past:
   algorithm taking advantage consumer of depth cameras. This research
   spawned [Personify](http://personify.com) (formally Nuvixa). [2009-2010]
 
-In my spare time, I work on a number of open source projects.  I try to keep my
-[list of open source contributions](contributions.html) current, but sometimes
-things get lost.
-
 ## Academic History
 
 I graduated in 2011 from the [University of Illinois at

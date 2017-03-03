@@ -5,18 +5,12 @@ TITLE: Palmer Dabbelt's Homepage
 
 ![A photo of me](assets/me.jpeg)
 
-I am currently finishing my masters' thesis and will be employed by
-[SiFive](http://sifive.com) starting March 1st.
+I am currently employed at SiFive.  While at SiFive I will be managing the
+RISC-V ports of various open source projects.  I currently maintain:
 
-I graduated in 2011 from the [University of Illinois at
-Urbana-Champaign](http://illinois.edu/) with a B.S. in Electrical and
-Computer Engineering, where I was advised by [Sanjay
-Patel](http://users.crhc.illinois.edu/sjp/) and [Steve
-Lumetta](http://users.crhc.illinois.edu/steve/).  I will soon from the
-[University of California: Berkeley](http://berkeley.edu) with a M.S in
-Computer Science, where I was advised by [Krste
-Asanovic](https://people.eecs.berkeley.edu/~krste/) and [Jonathan
-Bachrach](https://people.eecs.berkeley.edu/~jrb/).
+* binutils, which has been accepted by upstream for the 2.28 release.
+
+* GCC, which has been accepted by upstream for the 7.1 release.
 
 My [calendar](calendar.html) is availiable online and is
 generally kept up-to-date. Unless otherwise specified, blue events are
@@ -33,11 +27,12 @@ If you're looking for me to get something done, then the best way to go about
 this is to submit a pull request against my [TODO
 list](http://github.com/palmer-dabbelt/home/).
 
+
 ## Projects
 
-I am currently working on the following projects
+Here's a list of the projects I have worked on in the past:
 
-Additionally, I have been involved in a number of previous projects
+* PLSI: a portable VLSI flow for RTL-based computer architecture research.
 
 * Hurricane: a multicore RISC-V implementation designed for power
   efficient DSP.  This project resulted in a chip on ST's 28nm FDSOI.
@@ -60,6 +55,20 @@ Additionally, I have been involved in a number of previous projects
 In my spare time, I work on a number of open source projects.  I try to keep my
 [list of open source contributions](contributions.html) current, but sometimes
 things get lost.
+
+## Academic History
+
+I graduated in 2011 from the [University of Illinois at
+Urbana-Champaign](http://illinois.edu/) with a B.S. in Electrical and
+Computer Engineering, where I was advised by [Sanjay
+Patel](http://users.crhc.illinois.edu/sjp/) and [Steve
+Lumetta](http://users.crhc.illinois.edu/steve/).
+
+I will soon graduate from the
+[University of California: Berkeley](http://berkeley.edu) with a M.S in
+Computer Science, where I was advised by [Krste
+Asanovic](https://people.eecs.berkeley.edu/~krste/) and [Jonathan
+Bachrach](https://people.eecs.berkeley.edu/~jrb/).
 
 ## Teaching
 

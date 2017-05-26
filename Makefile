@@ -28,7 +28,7 @@ ifeq ($(BLOGC),)
 BLOGC := tools/bin/blogc
 endif
 
-BLOGC_VERSION ?= 0.3
+BLOGC_VERSION ?= 0.12.0
 BLOGC_URL ?= https://github.com/blogc/blogc/releases/download/v$(BLOGC_VERSION)/blogc-$(BLOGC_VERSION).tar.gz
 tools/bin/blogc: tools/src/blogc/build/blogc
 	mkdir -p $(dir $@)

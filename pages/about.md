@@ -21,7 +21,8 @@ time if possible.
 I can be reached by
 [email](http://www.google.com/recaptcha/mailhide/d?k=01fm-8WTM-kTwRkZd8rLZxmQ==&c=Bu87McGCMC3MvPApw0RqbH1gzipCRUUpLnzplgltk-I=). I've
 also uploaded my [resume](resume.pdf), but since I'm not currently
-looking for a job it's probably fairly out of date.
+looking for a job it's probably fairly out of date.  My [GPG
+key](palmer-dabbelt.gpg) is also availiable.
 
 If you're looking for me to get something done, then the best way to go about
 this is to submit a pull request against my [TODO

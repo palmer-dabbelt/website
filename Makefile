@@ -21,7 +21,8 @@ all: \
 	$(addprefix $(BUILD)/,$(ASSETS)) \
 	$(addprefix $(BUILD)/,$(KEEP)) \
 	$(BUILD)/index.html \
-	$(BUILD)/resume.pdf
+	$(BUILD)/resume.pdf \
+	$(BUILD)/palmer-dabbelt.gpg
 
 # Ensure I actually have the required program, if I don't then install thems
 ifeq ($(BLOGC),)
@@ -65,6 +66,10 @@ $(BUILD)/%.pdf: pages/%.tex $(PDFLATEX)
 	cd .latex_cache; $(PDFLATEX) -interaction=batchmode $(notdir $<) >& /dev/null
 	cp .latex_cache/$(notdir $@) $@
 endif
+
+# Generates my GPG key
+$(BUILD)/palmer-dabbelt.gpg:
+	gpg -a --export palmer@dabbelt.com > $@
 
 # Assets are copied directly from the repository
 $(BUILD)/assets/%: assets/%

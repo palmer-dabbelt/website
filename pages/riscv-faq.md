@@ -33,6 +33,9 @@ of this website.
 [How do I submit a patch?](#how-do-i-submit-a-patch-): Look up the
 [maintainer](riscv-maintainers.html) and submit it however they suggest.
 
+[Is there a list of issues?](#is-there-a-list-of-issues-): There's a list per
+project on our github, see below for a bit more info.
+
 ### The RISC-V Toolchain (GCC, binutils, glibc, and newlib)
 
 [What is the difference between the -mabi and -march
@@ -78,6 +81,77 @@ list](riscv-maintainers.html).  We tend to use [Git
 Hub](https://github.com/riscv) to manage our ports (both in-tree and
 out-of-tree), so if the maintainers list is out of date then you should check
 there (and tell me the list is broken).
+
+#### Is there a list of issues?
+
+SiFive shoulders most of the burden of maintaining key RISC-V toolchain and
+system software.  We generally track our bugs on a handful of GitHub
+repositories.  Since things move quickly, the most up-to-date way to get
+information about the projects is to just go on the bug trackers.
+
+##### Build Scripts
+
+[riscv-gnu-toolchain](https://github.com/riscv/riscv-gnu-toolchain/issues) is a
+super-repo that contains build scripts for our Linux (binutils, GCC, and glibc)
+and embedded (binutils, GCC, and newlib) toolchains.  While the repo itself
+isn't all that interesting as it's just build scripts, but since it's the point
+of contact for many people it tends to collect bugs in the issue tracker.
+
+If you're looking to help out, I'd recommend using this repository to build
+the tools and run regressions, but the bugs here tend to be less important.
+I try to close any bugs in this repo and move them to the corresponding
+project's repo once they've been looked at a bit, so the list here is a bit
+more of a "bug triage" list not a "bug fix" list.
+
+##### Binutils and GDB
+
+[riscv-binutils-gdb](https://github.com/riscv/riscv-binutils-gdb/issues)
+contains the source code for both binutils and GDB, which merged their upstream
+repositories years ago.  Our binutils port is upstream but our GDB port is not
+yet upstream, but both of the ports live in here.  In addition to the upstream
+code you'll find a handful of work in progress patches that are rebased on top
+of binutils regularly.
+
+The ``riscv-next`` branch is based on binutils's master release and is
+nominally a submission queue (though some WIP patches sit around for a while).
+We also maintain backports to the latest upstream release on branches with
+names like ``riscv-binutils-2.28``.  The backport branches are generally more
+stable, but you should check both the queue and the [pull
+requests](https://github.com/riscv/riscv-binutils-gdb/pulls) to make sure you
+haven't duplicated work someone else is doing.  If you've come from an issue
+then any pull request should be tagged in the issue, so you don't have to look
+very hard.
+
+##### GCC
+
+[riscv-gcc](https://github.com/riscv/riscv-gcc/issues) contains the source code
+for our GCC port, which has landed upstream.  The ``riscv-next`` branch is a
+submission queue that's occasianally rebased, but we also maintain backports on
+branches with names like ``riscv-gcc-7``.  In addition to the patches in the
+submission queue, there are generally a handful of outstanding [pull
+requests](https://github.com/riscv/riscv-gcc/pulls).
+
+##### glibc
+
+We maintain an out of tree port of
+[Linux](https://github.com/riscv/riscv-linux/issues).  We're in the process of
+submitting this port to upstream, so it's very much under flux.  If you're
+really interested in contributing, it's probably best to subscribe to the
+[patches](mailto:patches@groups.riscv.org) mailing list so you're always up to
+date.  As the port is in progress, the ``riscv-next`` branch tends to be out of
+date.  If you're looking for the latest and greatest (which may be unstable),
+you're better off looking at the latest ``riscv-for-submission-vN`` branch.
+
+##### Linux
+
+We maintain an out of tree port of
+[glibc](https://github.com/riscv/riscv-glibc/issues).  We're in the process of
+submitting this port to upstream, so it's very much under flux.  If you're
+really interested in contributing, it's probably best to subscribe to the
+[patches](mailto:patches@groups.riscv.org) mailing list so you're always up to
+date.  As the port is in progress, the ``riscv-next`` branch tends to be out of
+date.  If you're looking for the latest and greatest (which may be unstable),
+you're better off looking at the latest ``riscv-for-submission-vN`` branch.
 
 ### Toolchain-Related Questions (GCC, binutils, glibc, and newlib)
 

@@ -34,7 +34,8 @@ of this website.
 [maintainer](riscv-maintainers.html) and submit it however they suggest.
 
 [Is there a list of issues?](#is-there-a-list-of-issues-): There's a list per
-project on our github, see below for a bit more info.
+project on our [github](https://github.com/riscv), see below for a bit more
+info.
 
 ### The RISC-V Toolchain (GCC, binutils, glibc, and newlib)
 

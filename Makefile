@@ -105,3 +105,8 @@ install-dabbelt: all
 
 install-cal: all
 	rsync -av --delete build/ palmer.dabbelt@a5.millennium.berkeley.edu:public_html/
+
+# Shows the website in your browser of choice
+.PHONY: view
+view: all
+	$(BROWSER) $(BUILD)/index.html

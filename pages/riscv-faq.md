@@ -564,7 +564,27 @@ There are a few interesting things to note here:
 
 Up until now, this example has been using RISC-V's default code model
 [medlow](#what-does--mcmodel-medlow-mean-).  In order to demonstrate a bit more
-specifically what a code model is
+specifically what a code model is it's probably best to contrast this with our
+other code model, [medany](#what-does--mcmodel-medany-mean-).  The difference
+can be summed up with a single example output:
+
+  0000000000000000 main:
+     0:   00000797                auipc   a5,0x0
+                          0: R_RISCV_PCREL_HI20   global_symbol
+                          0: R_RISCV_RELAX        *ABS*
+     4:   0007b503                ld      a0,0(a5) # 0 main
+                          4: R_RISCV_PCREL_LO12_I .LA0
+                          4: R_RISCV_RELAX        *ABS*
+     8:   00a03533                snez    a0,a0
+     c:   8082                    ret
+
+Specifically, the [medany](#what-does--mcmodel-medany-mean-) code model
+generates ``auipc``/``ld`` pairs to refer to global symbols, which allows the
+code to be linked at any address; while
+[medlow](#what-does--mcmodel-medlow-mean-) generates ``lui``/``ld`` pairs to
+refer to global symbols, which restricts the code to be linked around address
+zero.  They both generate 32-bit signed offsets for referring to symbols, so
+they both restrict the generated code to being linked within a 2GiB window.
 
 #### What does -mcmodel=medlow mean?
 

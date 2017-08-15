@@ -8,8 +8,8 @@ TITLE: Palmer Dabbelt's Homepage
 I am currently employed at SiFive.  While at SiFive I will be managing the
 RISC-V ports of various open source projects.  I currentnly maintain binutils
 and GCC, and I am in the process of submitting Linux and glibc ports (which I
-have offered to maintain).  In addition to various software projects, I've
-decided to maintain a [FAQ](riscv-faq.html) on various RISC-V related topics.
+have offered to maintain).  In addition to these software projects, I
+write the ["All Aboard" blog series](http://sifive.com/blog).
 
 My [calendar](calendar.html) is availiable online and is
 generally kept up-to-date.  Green events signify that I need to be in the

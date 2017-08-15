@@ -35,6 +35,9 @@ action="http://wiki.teamliquid.net/starcraft/index.php">
 <input type="submit" value="Liquidpedia" />
 </form>
 
+[SiFive](http://sifive.com):
+[Jira](https://sifive.atlassian.net/secure/Dashboard.jspa)
+
 [Google](http://google.com):
 [mail](http://mail.dabbelt.com)
 [maps](http://maps.google.com)

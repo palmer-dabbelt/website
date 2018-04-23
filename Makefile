@@ -98,13 +98,10 @@ distclean:
 # Installs the currenty copy of the website on all the servers that I
 # store it on.
 .PHONY: install install-dabbelt install-cal
-install: install-dabbelt install-cal
+install: install-dabbelt
 
 install-dabbelt: all
 	rsync -av --delete build/ palmer@www.dabbelt.com:public_html/
-
-install-cal: all
-	rsync -av --delete build/ palmer.dabbelt@a5.millennium.berkeley.edu:public_html/
 
 # Shows the website in your browser of choice
 .PHONY: view

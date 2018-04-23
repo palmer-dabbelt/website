@@ -27,6 +27,11 @@ going.
 * June 20 - 22, 2018
 * https://events.linuxfoundation.org/events/automotive-linux-summit-2018/
 
+### Open Source Summit North America
+
+* August 29-31, 2018
+* https://events.linuxfoundation.org/events/open-source-summit-north-america-2018/
+
 ### Embedded Linux Conference Europe
 
 * October 22 - 24, 2018

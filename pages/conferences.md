@@ -40,3 +40,11 @@ going.
 
 * October 22 - 24, 2018
 * https://events.linuxfoundation.org/events/elc-openiot-europe-2018/
+
+## Past
+
+### RISC-V Workshop
+
+* May 7 - 10, 2018
+* https://riscv.org/2018/04/risc-v-workshop-in-barcelona-agenda/
+* Giving a talk titled "The State of RISC-V Software" on Tuesday

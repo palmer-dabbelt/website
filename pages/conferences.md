@@ -8,12 +8,6 @@ going.
 
 ## Going
 
-### RISC-V Workshop
-
-* May 7 - 10, 2018
-* https://riscv.org/2018/04/risc-v-workshop-in-barcelona-agenda/
-* Giving a talk titled "The State of RISC-V Software" on Tuesday
-
 ### DAC
 
 * June 24, 2018
@@ -23,6 +17,12 @@ going.
 * ?
 * ?
 * Panel session on RISC-V
+
+### GNU Cauldron
+
+* September 7 to 9, 2018
+* https://gcc.gnu.org/wiki/cauldron2018
+* RISC-V BoF, with Jim Wilson and Jeremy Bennett
 
 ## Undecided
 

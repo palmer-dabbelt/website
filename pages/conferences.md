@@ -14,11 +14,15 @@ going.
 * https://riscv.org/2018/04/risc-v-workshop-in-barcelona-agenda/
 * Giving a talk titled "The State of RISC-V Software" on Tuesday
 
-### DAC Workshop
+### DAC
 
 * June 24, 2018
 * http://www2.dac.com/events/eventdetails.aspx?id=251-254
 * Giving a talk titled "RISC-V OS Landscape"
+
+* ?
+* ?
+* Panel session on RISC-V
 
 ## Undecided
 

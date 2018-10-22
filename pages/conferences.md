@@ -8,43 +8,51 @@ going.
 
 ## Going
 
-### DAC
+These are the conferences I'm planning on attending.
 
-* June 24, 2018
-* http://www2.dac.com/events/eventdetails.aspx?id=251-254
-* Giving a talk titled "RISC-V OS Landscape"
+### Linux Plumbers Conference
 
-* ?
-* ?
-* Panel session on RISC-V
+Date: November 13th to November 15th, 2018
+Location: Vancouver, Canada
+Commitments: RISC-V microconference
 
-### GNU Cauldron
+### RISC-V Summit
 
-* September 7 to 9, 2018
-* https://gcc.gnu.org/wiki/cauldron2018
-* RISC-V BoF, with Jim Wilson and Jeremy Bennett
+Date: December 3rd to December 6th, 2018
+Location: San Jose, USA
+Commitments: Security monitor talk
+
+### FOSDEM
+
+Date: February 2nd to February 3rd, 2019
+Location: Brussles, Belgium
+Commitments: RISC-V dev room
+
+## Not Going
+
+These are the conferences I know about and want to keep on the schedule,
+but for some reason am not attending.
 
 ## Undecided
 
-### Automotive Linux Summit
+These are conferences that have been scheduled but I haven't decided
+about yet.
 
-* June 20 - 22, 2018
-* https://events.linuxfoundation.org/events/automotive-linux-summit-2018/
+## Not Yet Scheduled
 
-### Open Source Summit North America
+I keep these here as a reminder to myself so I don't miss anything.  If
+they're on the list then I probably intend to attend but just haven't
+seen the schedule yet, though nothing is fixed until I know exactly
+what's going on.
 
-* August 29-31, 2018
-* https://events.linuxfoundation.org/events/open-source-summit-north-america-2018/
+### Embedded Linux Conference
+
+Date: March, 2019
+
+### GNU Tools Cauldron
+
+Date: August, 2019
 
 ### Embedded Linux Conference Europe
 
-* October 22 - 24, 2018
-* https://events.linuxfoundation.org/events/elc-openiot-europe-2018/
-
-## Past
-
-### RISC-V Workshop
-
-* May 7 - 10, 2018
-* https://riscv.org/2018/04/risc-v-workshop-in-barcelona-agenda/
-* Giving a talk titled "The State of RISC-V Software" on Tuesday
+Date: October, 2019

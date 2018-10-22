@@ -58,6 +58,14 @@ action="http://wiki.teamliquid.net/starcraft/index.php">
 [riscv-gcc](https://travis-ci.org/riscv/riscv-gcc)
 [riscv-glibc](https://travis-ci.org/riscv/riscv-glibc)
 
+[Jira](https://sifive.atlassian.net/secure/Dashboard.jspa):
+[Releases](https://sifive.atlassian.net/projects/FSDK?orderField=RANK&selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page&status=unreleased)
+[Components](https://sifive.atlassian.net/projects/FSDK?selectedItem=com.atlassian.jira.jira-projects-plugin:components-page)
+[My Issues](https://sifive.atlassian.net/projects/FSDK/issues/FSDK-87?filter=myopenissues)
+
+[StackOverflow](https://stackoverflow.com):
+[RISC-V](https://stackoverflow.com/questions/tagged/riscv)
+
 <style>
  html { height: 97%; width: 98%; }
  body { height: 100%; width: 100%; }

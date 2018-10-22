@@ -12,21 +12,21 @@ These are the conferences I'm planning on attending.
 
 ### Linux Plumbers Conference
 
-Date: November 13th to November 15th, 2018
-Location: Vancouver, Canada
-Commitments: RISC-V microconference
+* Date: November 13th to November 15th, 2018
+* Location: Vancouver, Canada
+* Commitments: RISC-V microconference
 
 ### RISC-V Summit
 
-Date: December 3rd to December 6th, 2018
-Location: San Jose, USA
-Commitments: Security monitor talk
+* Date: December 3rd to December 6th, 2018
+* Location: San Jose, USA
+* Commitments: Security monitor talk
 
 ### FOSDEM
 
-Date: February 2nd to February 3rd, 2019
-Location: Brussles, Belgium
-Commitments: RISC-V dev room
+* Date: February 2nd to February 3rd, 2019
+* Location: Brussles, Belgium
+* Commitments: RISC-V dev room
 
 ## Not Going
 
@@ -47,12 +47,12 @@ what's going on.
 
 ### Embedded Linux Conference
 
-Date: March, 2019
+* Date: March, 2019
 
 ### GNU Tools Cauldron
 
-Date: August, 2019
+* Date: August, 2019
 
 ### Embedded Linux Conference Europe
 
-Date: October, 2019
+* Date: October, 2019

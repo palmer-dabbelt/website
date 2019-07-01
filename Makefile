@@ -98,10 +98,10 @@ distclean:
 # Installs the currenty copy of the website on all the servers that I
 # store it on.
 .PHONY: install install-dabbelt install-cal
-install: install-dabbelt
+install: install-nfshost
 
-install-dabbelt: all
-	rsync -av --delete build/ palmer@www.dabbelt.com:public_html/
+install-nfshost: all
+	rsync -av --delete build/ palmer_dabbelt@ssh.phx.nearlyfreespeech.net:~palmer/
 
 # Shows the website in your browser of choice
 .PHONY: view

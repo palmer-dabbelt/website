@@ -22,6 +22,7 @@ all: \
 	$(addprefix $(BUILD)/,$(KEEP)) \
 	$(BUILD)/index.html \
 	$(BUILD)/resume.pdf \
+	$(BUILD)/resume.pdf.gpg \
 	$(BUILD)/palmer-dabbelt.gpg
 
 # Ensure I actually have the required program, if I don't then install thems
@@ -66,6 +67,11 @@ $(BUILD)/%.pdf: pages/%.tex $(PDFLATEX)
 	cd .latex_cache; $(PDFLATEX) -interaction=batchmode $(notdir $<) >& /dev/null
 	cp .latex_cache/$(notdir $@) $@
 endif
+
+# Signs essentially anything.
+$(BUILD)/%.gpg: $(BUILD)/%
+	rm -f $@
+	gpg --sign $<
 
 # Generates my GPG key
 $(BUILD)/palmer-dabbelt.gpg:

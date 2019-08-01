@@ -5,8 +5,8 @@ TITLE: Palmer Dabbelt's Start Page
 Berkeley: <span id="Berkeley_z14e"></span>
 Boston: <span id="Boston_z161"></span>
 Seoul: <span id="Seoul_z43c"></span>
-<a href="http://time.is/" id="time_is_link" rel="nofollow">Time Now</a>
-<script src="http://widget.time.is/en.js"></script>
+<a href="https://time.is/" id="time_is_link" rel="nofollow">Time Now</a>
+<script src="https://widget.time.is/en.js"></script>
 <script>
 time_is_widget.init({
 	Berkeley_z14e: {time_format: "12hours:minutes AMPM"},
@@ -24,27 +24,27 @@ action="https://www.google.com/search">
 </form>
 
 <form method="get"
-action="http://en.wikipedia.org/w/index.php">
+action="https://en.wikipedia.org/w/index.php">
 <input type="text" name="search" size="80" maxlength="255" value="" />
 <input type="submit" value="Wikipedia" />
 </form>
 
 <form method="get"
-action="http://wiki.teamliquid.net/starcraft/index.php">
+action="https://wiki.teamliquid.net/starcraft/index.php">
 <input type="text" name="search" size="80" maxlength="255" value="" />
 <input type="submit" value="Liquidpedia" />
 </form>
 
-[SiFive](http://sifive.com):
+[SiFive](https://sifive.com):
 [Jira](https://sifive.atlassian.net/secure/Dashboard.jspa)
 
-[Google](http://google.com):
-[mail](http://mail.dabbelt.com)
-[maps](http://maps.google.com)
-[admin](http://admin.google.com)
+[Google](https://google.com):
+[mail](https://mail.dabbelt.com)
+[maps](https://maps.google.com)
+[admin](https://admin.google.com)
 
-[TeamLiquid.net](http://www.teamliquid.net):
-[Subscribed](http://www.teamliquid.net/mytlnet/mythreads.php)
+[TeamLiquid.net](https://www.teamliquid.net):
+[Subscribed](https://www.teamliquid.net/mytlnet/mythreads.php)
 
 [GitHub.com](https://www.github.com/palmer-dabbelt/):
 [riscv-gnu-toolchain](https://www.github.com/riscv/riscv-gnu-toolchain)

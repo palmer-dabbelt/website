@@ -33,36 +33,36 @@ endif
 BLOGC_VERSION ?= 0.12.0
 BLOGC_URL ?= https://github.com/blogc/blogc/releases/download/v$(BLOGC_VERSION)/blogc-$(BLOGC_VERSION).tar.gz
 tools/bin/blogc: tools/src/blogc/build/blogc
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	cp -f $< $@
 tools/src/blogc/build/blogc: tools/src/blogc/build/Makefile
 	$(MAKE) -C $(dir $@)
 tools/src/blogc/build/Makefile: tools/src/blogc/stamp
-	rm -rf $(dir $@)
-	mkdir -p $(dir $@)
+	@rm -rf $(dir $@)
+	@mkdir -p $(dir $@)
 	cd $(dir $@) && ../configure
 tools/src/blogc/stamp: tools/src/blogc-$(BLOGC_VERSION).tar.gz
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	tar -xzC $(dir $@) -f $< --strip-components=1
-	touch $@
+	@touch $@
 tools/src/blogc-$(BLOGC_VERSION).tar.gz:
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(WGET) $(BLOGC_URL) -O $@
 
 # Builds HTML pages using blogc
 $(BUILD)/%.html: pages/%.md templates/*.html $(BLOGC)
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(BLOGC) -o $@ -t templates/$(lastword $(subst /, ,$(dir $<))).html $<
 
 # Builds PDF pages using pdflatex, or just fetches them if that's not
 # installed.  Since these don't change a whole lot this should be OK...
 ifeq ($(PDFLATEX),)
 $(BUILD)/%.pdf:
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(WGET) http://www.dabbelt.com/~palmer/$(subst $(BUILD),,$@) -O $@
 else
 $(BUILD)/%.pdf: pages/%.tex $(PDFLATEX)
-	mkdir -p .latex_cache
+	@mkdir -p .latex_cache
 	cp $< .latex_cache
 	cd .latex_cache; $(PDFLATEX) -interaction=batchmode $(notdir $<) >& /dev/null
 	cp .latex_cache/$(notdir $@) $@
@@ -70,7 +70,7 @@ endif
 
 # Signs essentially anything.
 $(BUILD)/%.gpg: $(BUILD)/%
-	rm -f $@
+	@rm -f $@
 	gpg --sign $<
 
 # Generates my GPG key
@@ -79,17 +79,17 @@ $(BUILD)/palmer-dabbelt.gpg:
 
 # Assets are copied directly from the repository
 $(BUILD)/assets/%: assets/%
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 $(BUILD)/keep/%: keep/%
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	cp $< $@
 
 # I want people to go to the about page by default, and the easiest
 # way for me to do that is to simply install it twice.
 $(BUILD)/index.html: $(BUILD)/about.html
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	cp --reflink=auto $< $@
 
 # Removes everything that's been built

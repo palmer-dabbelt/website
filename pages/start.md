@@ -2,17 +2,21 @@ TITLE: Palmer Dabbelt's Start Page
 ----------------------------------
 
 <span id="world_clock">
-Berkeley: <span id="Berkeley_z14e"></span>
-Boston: <span id="Boston_z161"></span>
-Seoul: <span id="Seoul_z43c"></span>
-<a href="https://time.is/" id="time_is_link" rel="nofollow">Time Now</a>
-<script src="https://widget.time.is/en.js"></script>
+<a href="https://time.is/San_Mateo,_California">San Mateo</a>: <span id="San_Mateo__California_z14e"></span>
+<a href="https://time.is/Boston">Boston</a>: <span id="Boston_z161"></span>
+<a href="https://time.is/Pune">Pune</a>: <span id="Pune_z424"></span>
+<a href="https://time.is/Hsinchu">Hsinchu</a>: <span id="Hsinchu_z43f"></span>
+<a href="https://time.is/La Coitat">La Coitat</a>: <span id="La_Ciotat_z71f"></span>
+<a href="https://time.is">Time Now</a>
+<script src="//widget.time.is/t.js"></script>
 <script>
 time_is_widget.init({
-	Berkeley_z14e: {time_format: "12hours:minutes AMPM"},
-	Boston_z161: {time_format: "12hours:minutes AMPM"},
-	Seoul_z43c: {time_format: "12hours:minutes AMPM"},
-	});
+    San_Mateo__California_z14e: {time_format: "12hours:minutes AMPM"},
+    Boston_z161: {time_format: "12hours:minutes AMPM"},
+    Pune_z424:{time_format: "12hours:minutes AMPM"},
+    Hsinchu_z43f:{time_format: "12hours:minutes AMPM"},
+    La_Ciotat_z71f:{time_format: "12hours:minutes AMPM"},
+    });
 </script>
 </span>
 <p></p>

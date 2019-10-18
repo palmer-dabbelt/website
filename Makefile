@@ -21,6 +21,7 @@ all: \
 	$(addprefix $(BUILD)/,$(ASSETS)) \
 	$(addprefix $(BUILD)/,$(KEEP)) \
 	$(BUILD)/index.html \
+	$(BUILD)/blog.html \
 	$(BUILD)/resume.pdf \
 	$(BUILD)/resume.pdf.gpg \
 	$(BUILD)/palmer-dabbelt.gpg
@@ -30,7 +31,7 @@ ifeq ($(BLOGC),)
 BLOGC := tools/bin/blogc
 endif
 
-BLOGC_VERSION ?= 0.12.0
+BLOGC_VERSION ?= 0.17.0
 BLOGC_URL ?= https://github.com/blogc/blogc/releases/download/v$(BLOGC_VERSION)/blogc-$(BLOGC_VERSION).tar.gz
 tools/bin/blogc: tools/src/blogc/build/blogc
 	@mkdir -p $(dir $@)
@@ -41,18 +42,31 @@ tools/src/blogc/build/Makefile: tools/src/blogc/stamp
 	@rm -rf $(dir $@)
 	@mkdir -p $(dir $@)
 	cd $(dir $@) && ../configure
-tools/src/blogc/stamp: tools/src/blogc-$(BLOGC_VERSION).tar.gz
-	@mkdir -p $(dir $@)
+tools/src/blogc/stamp: \
+		tools/src/blogc-$(BLOGC_VERSION).tar.gz \
+		tools/patches/blogc-0001-header_add.patch
+	mkdir -p $(dir $@)
 	tar -xzC $(dir $@) -f $< --strip-components=1
-	@touch $@
+	patch -d $(dir $@) -p1 < $(abspath tools/patches/blogc-0001-header_add.patch)
+	touch $@
 tools/src/blogc-$(BLOGC_VERSION).tar.gz:
 	@mkdir -p $(dir $@)
 	$(WGET) $(BLOGC_URL) -O $@
 
 # Builds HTML pages using blogc
-$(BUILD)/%.html: pages/%.md templates/*.html $(BLOGC)
-	@mkdir -p $(dir $@)
+$(BUILD)/%.html: pages/%.md $(wildcard templates/*.html) $(BLOGC)
+	mkdir -p $(dir $@)
 	$(BLOGC) -o $@ -t templates/$(lastword $(subst /, ,$(dir $<))).html $<
+
+$(BUILD)/blog/%.html: $(BUILD)/blog/%.md $(wildcard templates/*.html) $(BLOGC)
+	mkdir -p $(dir $@)
+	$(BLOGC) -a 1 -o $@ -t templates/$(lastword $(subst /, ,$(dir $<))).html $(sort $<)
+
+$(BUILD)/blog/%.md: pages/blog/%.md
+	mkdir -p $(dir $@)
+	echo "DATE: $$(date -d "$$(basename "$<" .md | cut -d- -f1-3)" "+%B %d, %Y")" > $@
+	echo "BASENAME: $$(basename "$<" .md)" >> $@
+	cat "$^" >> "$@"
 
 # Builds PDF pages using pdflatex, or just fetches them if that's not
 # installed.  Since these don't change a whole lot this should be OK...
@@ -91,6 +105,12 @@ $(BUILD)/keep/%: keep/%
 $(BUILD)/index.html: $(BUILD)/about.html
 	@mkdir -p $(dir $@)
 	cp --reflink=auto $< $@
+
+# I'm going to start a blog!
+$(BUILD)/blog.html: \
+		$(patsubst pages/%,$(BUILD)/%,$(wildcard pages/blog/*.md)) \
+		$(wildcard templates/*.html)
+	$(BLOGC) -a 2 -o $@ -t templates/multiblog.html $(sort $(filter %.md,$^))
 
 # Removes everything that's been built
 .PHONY: clean

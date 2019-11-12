@@ -21,7 +21,6 @@ all: \
 	$(addprefix $(BUILD)/,$(ASSETS)) \
 	$(addprefix $(BUILD)/,$(KEEP)) \
 	$(BUILD)/index.html \
-	$(BUILD)/blog.html \
 	$(BUILD)/resume.pdf \
 	$(BUILD)/resume.pdf.gpg \
 	$(BUILD)/palmer-dabbelt.gpg
@@ -43,11 +42,9 @@ tools/src/blogc/build/Makefile: tools/src/blogc/stamp
 	@mkdir -p $(dir $@)
 	cd $(dir $@) && ../configure
 tools/src/blogc/stamp: \
-		tools/src/blogc-$(BLOGC_VERSION).tar.gz \
-		tools/patches/blogc-0001-header_add.patch
+		tools/src/blogc-$(BLOGC_VERSION).tar.gz
 	mkdir -p $(dir $@)
 	tar -xzC $(dir $@) -f $< --strip-components=1
-	patch -d $(dir $@) -p1 < $(abspath tools/patches/blogc-0001-header_add.patch)
 	touch $@
 tools/src/blogc-$(BLOGC_VERSION).tar.gz:
 	@mkdir -p $(dir $@)
@@ -60,7 +57,7 @@ $(BUILD)/%.html: pages/%.md $(wildcard templates/*.html) $(BLOGC)
 
 $(BUILD)/blog/%.html: $(BUILD)/blog/%.md $(wildcard templates/*.html) $(BLOGC)
 	mkdir -p $(dir $@)
-	$(BLOGC) -a 1 -o $@ -t templates/$(lastword $(subst /, ,$(dir $<))).html $(sort $<)
+	$(BLOGC) -o $@ -t templates/$(lastword $(subst /, ,$(dir $<))).html $(sort $<)
 
 $(BUILD)/blog/%.md: pages/blog/%.md
 	mkdir -p $(dir $@)

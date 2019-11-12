@@ -1,0 +1,2785 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Palmer's Blog</title>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-52227532-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+  </head>
+  <body>
+    <h1> Palmer Dabbelt's Blog </h1>
+    
+    <h2> <a href="blog/20170807-introduction.html">August 07, 2017: All Aboard, Part 0: Introduction </a> </h2>
+    <p>I&#x27;m Palmer Dabbelt, a software engineer at SiFive and a maintainer of
+various RISC-V ports. I&#x27;ve been working with the RISC-V ISA for a few
+years, and it&#x27;s finally starting to get ready for prime-time. We&#x27;re not
+yet upstream in Linux or glibc, but hopefully by the end of the year
+we&#x27;ll have the core set of system software in the relevant upstream
+repositories &ndash; at which point distributions can begin porting to RISC-V
+and users can begin using our software. I started working with RISC-V
+before the user ISA had been finalized (at least v2 of the user ISA, the
+real one :)) and it&#x27;s almost a bit scary how real things have gotten
+over the last few years.</p>
+<p>While I think the core of the RISC-V software ecosystem is in decent
+shape, I have noticed that it&#x27;s very difficult for users to get up to
+speed with RISC-V software due to a lack of non-code content. While
+SiFive has dramatically improved the documentation and user experience,
+there doesn&#x27;t appear to be good concrete, long-form technical content
+about the RISC-V software ecosystem that&#x27;s easy to find on a search
+engine. As a result, it&#x27;s very hard for people who are new to RISC-V to
+find solutions for their problems. The mailing list has been picking up
+this slack for the last year or so, but as the community continues
+expanding, the burden of relying on users to ask questions is becoming
+too high.</p>
+<p>I&#x27;ll be posting a blog entry every Monday for the foreseeable future.
+The articles will be aimed at both users and prospective developers of
+the various RISC-V ports that I help maintain. I&#x27;ll draft these posts so
+that they are interesting to read out-right, a good reference for new
+members of the community, and to be easy to search for on Google.</p>
+<p>I&#x27;ll see you all next Monday at our first stop: the <code>-march</code>, <code>-mabi</code>,
+and <code>-mtune</code> argument to RISC-V compilers!</p>
+
+    
+    <h2> <a href="blog/20170814-march_mabi_mtune.html">August 14, 2017: The `-march`, `-mabi`, and `-mtune` arguments to RISC-V Compilers </a> </h2>
+    <p>Before we can board the RISC-V train, we&#x27;ll have to take a stop
+at the metaphorical ticket office: our machine-specific GCC command-line
+arguments. These arguments all begin with <code>-m</code>, and are all specific to
+the RISC-V architecture port. In general, we&#x27;ve tried to match existing
+conventions for these arguments, but like pretty much everything else
+there are enough quirks to warrant a blog post. This blog discusses the
+arguments most fundamental to the RISC-V ISA: the <code>-march</code>, <code>-mabi</code>, and
+<code>-mtune</code> arguments.</p>
+<p>One advantage of having a functional GCC port for a long time
+before we stabilized SiFive&#x27;s interfaces is that we can have a well thought-out
+command-line interface to the RISC-V C and C++ compilers. This allows us
+to expose the same command-line interface from both the GNU tools (GCC
+and binutils) as well as the LLVM tools, as well as avoid the need for
+users to directly pass flags to the assembler or linker via the
+compiler&#x27;s <code>-Wa</code> and <code>-Wl</code> arguments.</p>
+<p>To ensure that the RISC-V compiler command-line interface is easy to extend in the future, we
+decided on a scheme where users describe the RISC-V target they are
+trying to compile for using three arguments:</p>
+<ul>
+<li><code>-march=ISA</code> selects the architecture to target. This controls which
+instructions and registers are available for the compiler to use.</li>
+<li><code>-mabi=ABI</code> selects the ABI to target. This controls the calling
+convention (which arguments are passed in which registers) and the
+layout of data in memory.</li>
+<li><code>-mtune=CODENAME</code> selects the microarchitecture to target. This
+informs GCC about the performance of each instruction, allowing it
+to perform target-specific optimizations.</li>
+</ul>
+<p>The <code>-march</code> Argument
+&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</p>
+<p>The <code>-march</code> argument is essentially defined by the RISC-V user-level
+ISA manual. <code>-march</code> controls instruction set from which the compiler is
+allowed to generate instructions. This argument determines the set of
+implementations that a program will run on: any RISC-V compliant system
+that subsumes the <code>-march</code> value used to compile a program should be
+able to run that program.</p>
+<p>To get a bit more specific: Version 2.2 of the RISC-V User-Level ISA
+defines three base ISAs that are currently supported by the toolchain:</p>
+<ul>
+<li>RV32I: A load-store ISA with 32, 32-bit general-purpose
+integer registers.</li>
+<li>RV32E: An embedded flavor of RV32I with only 16 integer registers.</li>
+<li>RV64I: A 64-bit flavor of RV32I where the general-purpose integer
+registers are 64-bits wide.</li>
+</ul>
+<p>In addition to these base ISAs, a handful of extensions have been
+specified. The extensions that have been specified and are
+supported by the toolchain are:</p>
+<ul>
+<li>M: Integer Multiplication and Division</li>
+<li>A: Atomic Instructions</li>
+<li>F: Single-Precision Floating-Point</li>
+<li>D: Double-Precision Floating-Point</li>
+<li>C: Compressed Instructions</li>
+</ul>
+<p>RISC-V ISA strings are defined by appending the supported extensions to
+the base ISA in the order listed above. For example, the RISC-V ISA with
+32, 32-bit integer registers and the instructions for multiplication
+would be denoted as <code>RV32IM</code>. Users can control the set of instructions
+that GCC uses when generating assembly code by passing the lower-case
+ISA string to the <code>-march</code> GCC argument: for example <code>-march=rv32im</code>.</p>
+<p>On RISC-V systems that don&#x27;t support particular operations, emulation
+routines may be used to provide the missing functionality. For example
+the following C code</p>
+<pre><code>double dmul(double a, double b) {
+  return a * b;
+}</code></pre>
+<p>will compile directly to a FP multiplication instruction when compiled
+with the D extension</p>
+<pre><code>$ riscv64-unknown-elf-gcc test.c -march=rv64imafdc -mabi=lp64d -o- -S -O3
+dmul:
+  fmul.d  fa0,fa0,fa1
+  ret</code></pre>
+<p>but will compile to an emulation routine without the D extension</p>
+<pre><code>$ riscv64-unknown-elf-gcc test.c -march=rv64i -mabi=lp64 -o- -S -O3
+dmul:
+  add     sp,sp,-16
+  sd      ra,8(sp)
+  call    __muldf3
+  ld      ra,8(sp)
+  add     sp,sp,16
+  jr      ra</code></pre>
+<p>Similar emulation routines exist for the C intrinsics that are trivially
+implemented by the M and F extensions. As of this writing, there are no
+A routine emulations because they were rejected as part of the Linux
+upstreaming process &ndash; this might change in the future, but - for now - we
+plan to mandate that Linux-capable machines subsume the A extension as
+part of the RISC-V platform specification.</p>
+<p>The <code>-mabi</code> Argument
+&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash;</p>
+<p>The <code>-mabi</code> argument to GCC specifies both the integer and
+floating-point ABIs to which the generated code complies. Much like how
+the <code>-march</code> argument specifies which hardware generated code can run
+on, the <code>-mabi</code> argument specifies which software generated code can
+link against. We use the standard naming scheme for integer ABIs
+(<code>ilp32</code> or <code>lp64</code>), with an argumental single letter appended to select
+the floating-point registers used by the ABI (<code>ilp32</code> vs <code>ilp32f</code> vs
+<code>ilp32d</code>). In order for objects to be linked together, they must follow
+the same ABI.</p>
+<p>RISC-V defines two integer ABIs and three floating-point ABIs, which
+together are treated as a single ABI string. The integer ABIs follow the
+standard ABI naming scheme:</p>
+<ul>
+<li><code>ilp32</code>: <code>int</code>, <code>long</code>, and pointers are all 32-bits long.
+<code>long   long</code> is a 64-bit type, <code>char</code> is 8-bit, and <code>short</code>
+is 16-bit.</li>
+<li><code>lp64</code>: <code>long</code> and pointers are 64-bits long, while <code>int</code> is a
+32-bit type. The other types remain the same as ilp32.</li>
+</ul>
+<p>while the floating-point ABIs are a RISC-V specific addition:</p>
+<ul>
+<li>&quot;&quot; (the empty string): No floating-point arguments are passed
+in registers.</li>
+<li><code>f</code>: 32-bit and smaller floating-point arguments are passed
+in registers. This ABI requires the F extension, as without F there
+are no floating-point registers.</li>
+<li><code>d</code>: 64-bit and smaller floating-point arguments are passed
+in registers. This ABI requires the D extension.</li>
+</ul>
+<p>Just like ISA strings, ABI strings are concatenated together and passed
+via the <code>-mabi</code> argument to GCC.  In order to explain why the ISA and
+ABI should be treated as two separate arguments, let&#x27;s examine a handful
+of <code>-march</code>&#x2F;<code>-mabi</code> combinations:</p>
+<ul>
+<li><code>-march=rv32imafdc -mabi=ilp32d</code>: Hardware floating-point
+instructions can be generated and floating-point arguments are
+passed in registers. This is like the <code>-mfloat-abi=hard</code> argument to
+ARM&#x27;s GCC.</li>
+<li><code>-march=rv32imac -mabi=ilp32</code>: No floating-point instructions can be
+generated and no floating-point arguments are passed in registers.
+This is like the <code>-mfloat-abi=soft</code> argument to ARM&#x27;s GCC.</li>
+<li><code>-march=rv32imafdc -mabi=ilp32</code>: Hardware floating-point
+instructions can be generated, but no floating-point arguments will
+be passed in registers. This is like the <code>-mfloat-abi=softfp</code>
+argument to ARM&#x27;s GCC, and is usually used when interfacing with
+soft-float binaries on a hard-float system.</li>
+<li><code>-march=rv32imac -mabi=ilp32d</code>: Illegal, as the ABI requires
+floating-point arguments are passed in registers but the ISA defines
+no floating-point registers to pass them in.</li>
+</ul>
+<p>As a more concrete example, let&#x27;s examine a simple C function that takes
+two double-precision arguments and returns their product. In order to
+make argument location explicit in all cases, we&#x27;ll reverse the order of
+the arguments between the function call and the multiplication:</p>
+<pre><code>double dmul(double a, double b) {
+  return b * a;
+}</code></pre>
+<p>The first argument is the simplest one: if neither the ABI or ISA
+contains the concept of floating-point hardware then the C compiler
+cannot emit any floating-point-specific instructions. In this case,
+emulation routines are used to perform the computation and the arguments
+are passed in integer registers. As you can see, the double-precision
+arguments are passed in 32-bit integer register pairs, the order of
+arguments is swapped, <code>ra</code> is saved (as it&#x27;s callee saved), the
+emulation routine is called, the stack is unwound, and the result is
+returned (which is already in <code>a0,a1</code> from <code>__muldf3</code>).</p>
+<pre><code>$ riscv64-unknown-elf-gcc test.c -march=rv32imac -mabi=ilp32 -o- -S -O3
+dmul:
+  mv      a4,a2
+  mv      a5,a3
+  add     sp,sp,-16
+  mv      a2,a0
+  mv      a3,a1
+  mv      a0,a4
+  mv      a1,a5
+  sw      ra,12(sp)
+  call    __muldf3
+  lw      ra,12(sp)
+  add     sp,sp,16
+  jr      ra</code></pre>
+<p>The second case is the exact opposite of this one: everything is
+supported in hardware. In this case we can emit a single <code>fmul.d</code>
+instruction to perform the computation, which when register allocated
+correctly handles reversing the input arguments and producing the return
+value.</p>
+<pre><code>$ riscv64-unknown-elf-gcc test.c -march=rv32imafdc -mabi=ilp32d -o- -S -O3
+dmul:
+  fmul.d  fa0,fa1,fa0
+  ret</code></pre>
+<p>The last case exposes why there is a split between the <code>-march</code> and
+<code>-mabi</code> arguments to RISC-V compilers: users may want to generate code
+that can be linked with code designed for systems that don&#x27;t subsume a
+particular extension while still taking advantage of the extra
+instructions present in a particular extension. This is a common problem
+when dealing with legacy libraries that need to be integrated into newer
+systems so we&#x27;ve designed our compiler arguments and multilib paths to
+cleanly integrate with this workflow.</p>
+<p>The generated code is essentially a mix between the two above outputs:
+the arguments are passed in the registers specified by the <code>ilp32</code> ABI
+(as opposed to the <code>ilp32d</code> ABI, which could pass these arguments in
+registers) but then once inside the function the compiler is free to use
+the full power of the <code>rv32imafdc</code> ISA to actually compute the result.
+As a result, the compiler generates the double-precision arguments in
+memory (the only way to construct a double on <code>rv32</code>), loads them into
+<code>F</code> registers, performs the computation, stores the <code>F</code>-register result
+back out to the stack, and loads the result into the ABI-compliant
+return value registers (<code>a0</code> and <code>a1</code>). While this is less efficient
+than the code the compiler could generate if it was allowed to take full
+advantage of the D-extension registers, it&#x27;s a lot more efficient than
+computing the floating-point multiplication without the D-extension
+instructions</p>
+<pre><code>$ riscv64-unknown-elf-gcc test.c -march=rv32imafdc -mabi=ilp32 -o- -S -O3
+dmul:
+  add     sp,sp,-16
+  sw      a0,8(sp)
+  sw      a1,12(sp)
+  fld     fa5,8(sp)
+  sw      a2,8(sp)
+  sw      a3,12(sp)
+  fld     fa4,8(sp)
+  fmul.d  fa5,fa5,fa4
+  fsd     fa5,8(sp)
+  lw      a0,8(sp)
+  lw      a1,12(sp)
+  add     sp,sp,16
+  jr      ra</code></pre>
+<p>The final possibly ABI&#x2F;ISA combination is easy: it&#x27;s illegal. There&#x27;s no
+way the compiler could generate code for an ISA that requires passing
+arguments in <code>F</code> registers if it doesn&#x27;t have access to the instructions
+required to access those registers. As this must be user error, we bail
+out right away.</p>
+<pre><code>$ riscv64-unknown-elf-gcc test.c -march=rv32imac -mabi=ilp32d -o- -S -O3
+cc1: error: requested ABI requires -march to subsume the &#x27;D&#x27; extension</code></pre>
+<p>The <code>-mtune</code> Argument
+&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</p>
+<p>The last compiler argument that&#x27;s involved in specifying a target is the
+simplest of the bunch. While the <code>-march</code> argument can cause systems to
+be unable to execute code and the <code>-mabi</code> argument can cause objects to
+be incompatible with each other, the <code>-mtune</code> argument should only
+change the performance of the generated code. As it currently stands we
+really don&#x27;t have any tuning models for RISC-V systems. Unless you&#x27;ve
+just added a new tuning parameter to our GCC port, you probably
+shouldn&#x27;t bother doing anything with this argument.</p>
+
+    
+    <h2> <a href="blog/20170821-relocations.html">August 21, 2017: Relocations in ELF Toolchains </a> </h2>
+    <p>Our first stop on our exploration of the RISC-V toolchain will be an
+overview of ELF relocations and how they are used by the RISC-V
+toolchain. We&#x27;ll shy away from discussing linker relaxations and their
+impact on performance for a follow-up blog post so this doesn&#x27;t get too
+long. The example has been carefully constructed to be unrelaxable as
+to avoid confusion. Additionally we&#x27;re only going to discuss the
+relocations used by statically linked executables, avoid discussing
+position independent executables and forget about thread local storage
+&ndash; like linker relaxation, all of those warrant a whole post on their
+own. There will be a lot more to come about relocations in later blog
+posts.</p>
+<h4 id="an-example-of-a-relocation-in-a-c-program">An Example of a Relocation in a C Program</h2>
+<p>Relocations are a concept that exists due to the split between the compiler and
+the linker that is present in most toolchains. While the specifics of this
+article will apply only to ELF-based RISC-V toolchains (i.e., GCC+binutils or
+LLVM), the general concept of relocations exists in farther-reaching compilers
+like Hotspot. Since relocations exist to pass information between the compiler
+and linker, let&#x27;s first look at how a simple program is compiled. Take the
+following C code:</p>
+<p>    long global<em>symbol[2];
+<br />
+    int main() {
+      return global</em>symbol[0] != 0;
+    }</p>
+<p>Even though a single GCC invocation can produce a binary for this simple case,
+under the covers the GCC driver script is actually running the preprocessor,
+then the compiler, then the assembler and finally the linker. The
+<code>--save-temps</code> argument to GCC allows users to see all these intermediate
+files, and is a useful argument for poking around inside the toolchain.</p>
+<pre><code>$ riscv64-unknown-linux-gnu-gcc relocation.c -o relocation -O3 --save-temps</code></pre>
+<p>Each step in this run of the GCC wrapper script generates a file:</p>
+<ul>
+<li><code>relocation.i</code>: The preprocessed source, which expands any preprocessor
+directives (things like <code>#include</code> or <code>#ifdef</code>).</li>
+<li><code>relocation.s</code>: The output of the actual compiler, which is an assembly file (a
+text file in the RISC-V assembly format).</li>
+<li><code>relocation.o</code>: The output of the assembler, which is an un-linked object file
+(an ELF file, but not an executable ELF).</li>
+<li><code>relocation</code>: The output of the linker, which is a linked executable (an
+executable ELF file).</li>
+</ul>
+<p>The first step is to run the preprocessor. Since this is a simple source file with
+no preprocessor macros, the preprocessor run is pretty boring: all it does is
+emit some directives to be used if debugging information is later generated:</p>
+<p>    $ cat relocation.i
+    # 1 &quot;relocation.c&quot;
+    # 1 &quot;built-in&quot;
+    # 1 &quot;command-line&quot;
+    # 31 &quot;command-line&quot;
+    # 1 &quot;&#x2F;scratch&#x2F;palmer&#x2F;work&#x2F;upstream&#x2F;riscv-gnu-toolchain&#x2F;build&#x2F;install&#x2F;sysroot&#x2F;usr&#x2F;include&#x2F;stdc-predef.h&quot; 1 3 4
+    # 32 &quot;command-line&quot; 2
+    # 1 &quot;relocation.c&quot;
+    long global<em>symbol;
+<br />
+    int main() {
+      return global</em>symbol != 0;
+    }</p>
+<p>The preprocessed output is then fed through the compiler, which generates a
+assembly file. It is at this point at which we begin to see why relocations
+are necessary. This file is plain-text that contains RISC-V assembly code and
+therefor is easy to read, so let&#x27;s take a look right now:</p>
+<pre><code>$ cat relocation.s
+main:
+  lui   a5,%hi(global_symbol)
+  ld    a0,%lo(global_symbol)(a5)
+  snez  a0,a0
+  ret</code></pre>
+<p>If you&#x27;re not accustomed to reading the assembly output from RISC-V&#x27;s GCC port
+then this might look a bit odd: there&#x27;s an additional pair of
+addressing modes that aren&#x27;t listed anywhere in the RISC-V instruction manual
+and don&#x27;t really look like they could be sensibly implemented in hardware:
+<code>%hi(global_symbol)</code> and <code>%lo(global_symbol)(a5)</code>.</p>
+<p>These addressing modes exist to allow the compiler to address global symbols.
+The fundamental problem with addressing global symbols is that the compiler
+must emit assembly instructions in order to access said symbols but the actual
+address of those global symbols cannot be known until link time, an impossible
+task.  As a concrete example try to figure out what bits the compiler would
+emit for the <code>lui</code> that addresses <code>global_symbol</code>.</p>
+<p>Relocations resolve this discrepancy: when the compiler is unable to know the
+bits that should be emitted as part of a particular instruction, in instead
+just emits arbitrary bits for that instruction and also emits a relocation
+entry. This relocation entry points to the bits that will be emitted and
+contains enough information for the linker to fill out those bits.</p>
+<p>The specifics of this are probably best explained by example, so let&#x27;s go
+through the simple program above to see how it all works. The next link in the
+toolchain is the assembler, which takes in the assembly file from above and
+produces an ELF object file that has not yet been linked. You can examine
+these object files with objdump, which I&#x27;ve done below:</p>
+<p>    $ riscv64-unknown-linux-gnu-objdump -d -t -r relocation.o
+<br />
+    relocation.o:     file format elf64-littleriscv
+<br />
+    SYMBOL TABLE:
+    0000000000000000 l    df <em>ABS</em>  0000000000000000 relocation.c
+    0000000000000000 l    d  .text  0000000000000000 .text
+    0000000000000000 l    d  .data  0000000000000000 .data
+    0000000000000000 l    d  .bss   0000000000000000 .bss
+    0000000000000000 l    d  .text.startup  0000000000000000 .text.startup
+    0000000000000000 l    d  .comment       0000000000000000 .comment
+    0000000000000000 g     F .text.startup  000000000000000e main
+    0000000000000010       O <em>COM</em>  0000000000000008 global<em>symbol
+<br />
+    Disassembly of section .text.startup:
+<br />
+    0000000000000000 main:
+       0:   000007b7                lui     a5,0x0
+                            0: R</em>RISCV<em>HI20 global</em>symbol
+                            0: R<em>RISCV</em>RELAX        <em>ABS</em>
+       4:   0007b503                ld      a0,0(a5) # 0 main
+                            4: R<em>RISCV</em>LO12<em>I       global</em>symbol
+                            4: R<em>RISCV</em>RELAX        <em>ABS</em>
+       8:   00a03533                snez    a0,a0
+       c:   8082                    ret</p>
+<p>Now is the first point at which you get to explicitly see a relocation (which
+are only shown when the <code>-r</code> argument is passed to objdump).  Here we can see
+four RISC-V-specific relocations in two pairs: a
+<code>R_RISCV_HI20</code>+<code>R_RISCV_RELAX</code> pair for the <code>lui</code> and a
+<code>R-RISCV_LO12_I</code>+<code>R_RISCV_RELAX</code> pair for the <code>ld</code>.  The
+<code>R_RISCV_RELAX</code> relocations exist solely to signify that it is legal to
+perform linker relaxation on the previous relocation. Since we&#x27;re not talking
+about linker relaxation in this blog entry, we can just ignore those entries for
+now.</p>
+<p>The other two relocations pair explicitly with an addressing mode present in
+the RISC-V ISA: <code>R_RISCV_HI20</code> pairs with a U-format immediate while
+<code>R_RISCV_LO12_I</code> pairs with an I-format immediate. In general, you&#x27;ll find
+that every addressing mode with an immediate will have at least one relocation
+that fills out that immediate &ndash; sometimes there&#x27;ll be a handful more if
+that instruction format is used to link against more complicated forms of
+symbols as well (for example, PIC or TLS relocations).</p>
+<p>Before we get too deep into relocations, let&#x27;s quickly examine how the
+toolchain works when it&#x27;s possible to fill out a relocation correctly. The
+next link in the toolchain is the linker, which consumes the relocations
+generated by the assembler to fill our the relevant bits in the output ELF
+executable. The program now has all the glibc startup code so it&#x27;s become
+quite large. Thus, I&#x27;m only posting the relevant snippets below:</p>
+<p>    $ riscv64-unknown-linux-gnu-objdump -d -t -r relocation
+    relocation:     file format elf64-littleriscv
+<br />
+    SYMBOL TABLE:
+    0000000000012038 g     O .bss 0000000000000010              global<em>symbol
+    ...
+<br />
+    Disassembly of section .text:
+<br />
+    0000000000010330 main:
+     10330:       67c9                    lui     a5,0x12
+     10332:       0387b503                ld      a0,56(a5) # 12038 global</em>symbol
+     10336:       00a03533                snez    a0,a0
+     1033a:       8082                    ret</p>
+<p>As you can see, the symbol table now has an actual address for
+<code>global_symbol</code>, the instructions that were referenced by the relocations
+have some non-zero bits filled out to reference <code>global_symbol</code>, and the
+relocations have been dropped from the ELF file as they&#x27;re no longer necessary
+&ndash; this is only strictly the case because we have a statically-linked symbol,
+relocating dynamic symbols is deferred to the loader in that case.</p>
+<h4 id="the---relocation-truncated-to-fit---error-message">The <code>relocation truncated to fit</code> Error Message</h2>
+<p>Now that you know a bit about what relocations are we can discuss most people&#x27;s
+only exposure to relocations: the <code>relocation truncated to fit</code> error
+message that appears when linking. It&#x27;s hard to explain this message to people
+who don&#x27;t understand relocations, but if you understand what a relocation is
+then it&#x27;s not actually that tricky of an error message.</p>
+<p>In order to explain the error message, we&#x27;ll start with an extremely simple
+program. In this case we don&#x27;t want anything from the C library to show up in
+our error message so we&#x27;re defining <code>_start</code> instead of <code>main</code> and then
+avoiding any standard library objects by passing <code>-nostdlib -nostartfiles</code> to
+GCC &ndash; this program won&#x27;t actually work, but it&#x27;ll serve to explain what&#x27;s
+going on. Moving the text section with <code>-Wl,-Ttext-segment,0x80000000</code> will
+actually trigger the bug, you&#x27;ll see why below:</p>
+<pre><code>$ cat reloc_fail.c
+long global_symbol;
+int _start() {
+  return global_symbol;
+}
+$ riscv64-unknown-linux-gnu-gcc reloc_fail.c -o reloc_fail -O3 -nostartfiles -nostdlib --save-temps  -Wl,-Ttext-segment,0x80000000
+reloc_fail.o: In function `_start&#x27;:
+reloc_fail.c:(.text+0x0): relocation truncated to fit: R_RISCV_HI20 against symbol `global_symbol&#x27; defined in COMMON section in reloc_fail.o
+&#x2F;scratch&#x2F;palmer&#x2F;work&#x2F;20170725-binutils-2.29&#x2F;install&#x2F;bin&#x2F;..&#x2F;lib&#x2F;gcc&#x2F;riscv64-unknown-linux-gnu&#x2F;7.1.1&#x2F;..&#x2F;..&#x2F;..&#x2F;..&#x2F;riscv64-unknown-linux-gnu&#x2F;bin&#x2F;ld: final link failed: Symbol needs debug section which does not exist
+collect2: error: ld returned 1 exit status</code></pre>
+<p>On the surface this looks like a super scary error message: there&#x27;s all sorts
+of references to temporary objects; the mention of symbols, sections and
+relocations; and an odd message about debug sections. This is usually the
+point at which people give up and call a toolchain hacker, but with your
+newfound knowledge of relocations you should be able to figure out what&#x27;s going
+on here.</p>
+<p>First, let&#x27;s focus on only the important part of the error message and ignore
+all the cruft that&#x27;s not actually relevant. The actual error you want to look
+at here is:</p>
+<pre><code>reloc_fail.c:(.text+0x0): relocation truncated to fit: R_RISCV_HI20 against symbol `global_symbol&#x27;</code></pre>
+<p>which simply states that the compiler generated a <code>R_RISCV_HI20</code> relocation
+against the address <code>global_symbol</code>, but that the linker was unable fit the
+symbol&#x27;s full address into the bits specified by that relocation. The phrase
+&quot;truncated to fit&quot; is a bit odd: what the linker is actually saying is that the
+address in the relocation must be truncated to fit into the bits allocated by
+the relocation if it was to fit, but since this is an error the linker isn&#x27;t
+really truncating anything.</p>
+<p>In order to start really delving into the &quot;why&quot; of the error message, we need to first
+look at the input to the linker, which in this case is the object file
+generated by the assembler. Like the above example, we need the relocation
+because the compiler needs to reference a global symbol that it can&#x27;t know the
+address for.</p>
+<pre><code>$ riscv64-unknown-linux-gnu-objdump -d -r reloc_fail.o
+reloc_fail.o:     file format elf64-littleriscv
+
+Disassembly of section .text:
+
+0000000000000000 &lt;_start&gt;:
+   0:   000007b7                lui     a5,0x0
+                        0: R_RISCV_HI20 global_symbol
+                        0: R_RISCV_RELAX        *ABS*
+   4:   0007a503                lw      a0,0(a5) # 0 &lt;_start&gt;
+                        4: R_RISCV_LO12_I       global_symbol
+                        4: R_RISCV_RELAX        *ABS*
+   8:   8082                    ret</code></pre>
+<p>We can&#x27;t actually see the linker output because it&#x27;s impossible to link this
+file. Since I hate doing arithmetic by hand, I instead just went ahead and
+modified the linker to omit the range check when performing relocations with
+the patch shown below:</p>
+<pre><code>$ git diff
+diff --git a&#x2F;bfd&#x2F;elfnn-riscv.c b&#x2F;bfd&#x2F;elfnn-riscv.c
+index 3c04507623c3..f8a97411de35 100644
+--- a&#x2F;bfd&#x2F;elfnn-riscv.c
++++ b&#x2F;bfd&#x2F;elfnn-riscv.c
+@@ -1492,8 +1492,6 @@ perform_relocation (const reloc_howto_type *howto,
+     case R_RISCV_GOT_HI20:
+     case R_RISCV_TLS_GOT_HI20:
+     case R_RISCV_TLS_GD_HI20:
+-      if (ARCH_SIZE &gt; 32 &amp;&amp; !VALID_UTYPE_IMM (RISCV_CONST_HIGH_PART (value)))
+-       return bfd_reloc_overflow;
+       value = ENCODE_UTYPE_IMM (RISCV_CONST_HIGH_PART (value));
+       break;</code></pre>
+<p>With the above patch, the linker can generate an incorrect object file that we
+can inspect, which I&#x27;ve shown below:</p>
+<pre><code>$ riscv64-unknown-linux-gnu-objdump -d -t reloc_fail
+reloc_fail:     file format elf64-littleriscv
+
+SYMBOL TABLE:
+00000000800000b0 l    d  .text  0000000000000000 .text
+00000000800010c0 l    d  .bss   0000000000000000 .bss
+0000000000000000 l    d  .comment       0000000000000000 .comment
+0000000000000000 l    df *ABS*  0000000000000000 reloc_fail.c
+00000000800018ba g       .text  0000000000000000 __global_pointer$
+00000000800010c0 g     O .bss   0000000000000008 global_symbol
+00000000800000b0 g     F .text  000000000000000a _start
+00000000800010ba g       .bss   0000000000000000 __bss_start
+00000000800010ba g       .bss   0000000000000000 _edata
+00000000800010c8 g       .bss   0000000000000000 _end
+
+Disassembly of section .text:
+
+00000000800000b0 &lt;_start&gt;:
+    800000b0:   800017b7                lui     a5,0x80001
+    800000b4:   0c07a503                lw      a0,192(a5) # ffffffff800010c0 &lt;__global_pointer$+0xfffffffefffff806&gt;
+    800000b8:   8082                    ret</code></pre>
+<p>As we can clearly see, the instructions that load the value of
+<code>global_symbol</code> do not actually match the address of <code>global_symbol</code> as
+listed by the symbol table, which is exactly what the <code>relocation truncated to
+fit</code> error message is trying to say. In the particular case of the
+<code>R_RISCV_HI20</code>+<code>R_RISCV_LO12_I</code> relocation pair the largest absolute
+address that can be generated is <code>0x7FFFFFFF</code> &ndash; remember U-type immediates
+are signed on RISC-V, so any larger absolute address overflows on RV64.</p>
+<p>While every architecture performs some relocations when linking, RISC-V
+leverages the linker&#x27;s relocation infrastructure more aggressively than any other
+architecture so these sorts of issues may crop up more frequently than in other
+ports.  We&#x27;ll be talking a lot about relocations in the blog as they frequently
+drive other toolchain design issues.</p>
+
+    
+    <h2> <a href="blog/20170828-linker_relaxation.html">August 28, 2017: Linker Relaxation in the RISC-V Toolchain </a> </h2>
+    <p><a href="20170821-relocations.html">Last week&#x27;s blog entry</a> discussed
+relocations and how they apply to the RISC-V toolchain. This week we&#x27;ll
+be delving a bit deeper into the RISC-V linker to discuss linker
+relaxation, a concept so important it has greatly shaped the design of
+the RISC-V ISA. Linker relaxation is a mechanism for optimizing
+programs at link-time, as opposed to traditional program optimization
+which happens at compile-time. This blog will follow an example linker
+relaxation through the toolchain, demonstrate an example of how linker
+relaxations meaningfully improve the performance of a real program and
+introduce a new RISC-V relocation. We&#x27;ll shy away from discussing the
+impact of linker relaxations on the RISC-V ISA, until another blog
+entry.</p>
+<p>Just like last time, we&#x27;ll start with a simple C test program that&#x27;s not
+linked against anything else. This program won&#x27;t perform a sane
+computation, the goal is just that it&#x27;s simple enough to get the point
+across. I&#x27;ll skip the assembly this time: as this post is about the
+linker, we can&#x27;t really discuss anything until we get to an object file. 
+Since you&#x27;re now an expert in the toolchain, I&#x27;ll just blast out some
+commands here:</p>
+<pre><code>$ cat test.c
+int func(int a) __attribute__((noinline));
+int func(int a) {
+  return a + 1;
+}
+
+int _start(int a) {
+  return func(a);
+}
+$ riscv64-unknown-linux-gnu-gcc test.c -o test -O3
+$ riscv64-unknown-linux-gnu-objdump -d -r test.o
+test.o:     file format elf64-littleriscv
+Disassembly of section .text:
+
+0000000000000000 &lt;func&gt;:
+   0:   2505                    addiw   a0,a0,1
+   2:   8082                    ret
+
+0000000000000004 &lt;_start&gt;:
+   4:   00000317                auipc   ra,0x0
+                        4: R_RISCV_CALL func
+                        4: R_RISCV_RELAX        *ABS*
+   8:   00030067                jr      ra</code></pre>
+<p>You can now see a new RISC-V relocation: <code>R_RISCV_CALL</code>.  This
+relocation sits between an <code>auipc</code> and a <code>jalr</code> instruction (here
+disassembled as the <code>jr</code> shorthand as this is a tail call) and points to
+the symbol that should be the target of the jump, in this case the
+<code>func</code> symbol. The <code>R_RISCV_CALL</code> relocation is paired with a
+<code>R_RISCV_RELAX</code> relocation, which allows the linker to relax this
+relocation pair &ndash; the whole point of this blog!</p>
+<p>In order to understand relaxation, we first must examine the RISC-V ISA a
+bit. In the RISC-V ISA there are two unconditional control transfer
+instructions: <code>jalr</code>, which jumps to an absolute address as specified by
+an immediate offset from a register; and <code>jal</code>, which jumps to a
+pc-relative offset as specified by an immediate. The only differences
+between the <code>auipc</code>+<code>jalr</code> pair in this object file and a single <code>jal</code>
+are that the pair can address a 32-bit signed offset from the current PC
+while the <code>jal</code> can only address a 21-bit signed offset from the current
+PC, and that the <code>jal</code> instruction is half the size (which is a good
+proxy for twice the speed).</p>
+<p>As the compiler cannot know if the offset between <code>_start</code> and <code>func</code>
+will fit within a 21-bit offset, it is forced to generate the longer
+call. We don&#x27;t want to impose this cost in cases where it&#x27;s not
+necessary, so we instead optimize this case in the linker. Let&#x27;s look
+at the executable to see the result of linker relaxation:</p>
+<pre><code>$ riscv64-unknown-linux-gnu-objdump -d -r test
+test:     file format elf64-littleriscv
+
+Disassembly of section .text:
+
+0000000000010078 &lt;func&gt;:
+   10078:       2505                    addiw   a0,a0,1
+   1007a:       8082                    ret
+
+000000000001007c &lt;_start&gt;:
+   1007c:       ffdff06f                j       10078 &lt;func&gt;</code></pre>
+<p>As you can see, the linker knows that the call from <code>_start</code> to <code>func</code>
+fits within the 21-bit offset of the <code>jal</code> instruction and converts it
+to a single instruction.</p>
+<h4 id="the-risc-v-implementation-of-linker-relaxation">The RISC-V Implementation of Linker Relaxation</h2>
+<p>While the concept of linker relaxation is fairly straight-forward, there
+are a lot of tricky details that need to be done correctly in order to
+ensure the linker produces the correct symbol addresses everywhere. To
+the best of my knowledge, the RISC-V BFD port make the most aggressive
+use of linker relaxations: essentially no <code>.text</code> section symbol
+addresses are known until link time.  This has a few interesting side
+effects:</p>
+<ul>
+<li><code>.align</code> directives must be handled by the linker for any relaxable
+sections.</li>
+<li>Debug information must be emitted twice: once by the compiler for the
+object file and once again by the linker for the executable.</li>
+</ul>
+<p>All these points probably warrant blog posts of their own &ndash; some of
+these are planned, others require me to fix some bugs before I feel
+comfortable talking about them :).</p>
+<p>The actual implementation of linker relaxation is, as you&#x27;d expect,
+fairly esoteric. The code lives in <code>_bfd_riscv_relax_section</code> inside
+<code>binutils-gdb&#x2F;bfd&#x2F;elfnn-riscv.c</code>, which looks roughly like the
+following:</p>
+<pre><code>_bfd_riscv_relax_section:
+  if section shouldn&#x27;t be relaxed:
+    return DONE
+  for each relocation:
+    if relocation is relaxable:
+      store per-relocation function pointer
+    read the symbol table
+    obtain the symbol&#x27;s address
+    call the per-relocation function</code></pre>
+<p>Essentially, all it&#x27;s doing is some shared bookkeeping code and then
+calling a relocation-specific function to actually relax the relocation.
+The relax functions all look somewhat similar, so I&#x27;ll show an example
+of the function that relaxes <code>R_RISCV_CALL</code> relocation that was
+discussed above</p>
+<pre><code>_bfd_riscv_relax_call:
+  compute a pessimistic address range
+  if relocation doesn&#x27;t fit into a UJ-type immediate:
+    return DONE
+  compute offsets for various short jumps
+  if RVC is enabled and the relocation fits in a C.JAL:
+    convert the jump to c.jal
+  if relocation fits in an JAL:
+    convert the jump to a jal
+  if call target is near absolute address 0:
+    convert the jump to a x0-offset JALR
+  delete the JALR, as it&#x27;s not necessary any more</code></pre>
+<p>While this specific function only relaxes the <code>R_RISCV_CALL</code> relocation,
+it follows the pattern that most of the implementations of the
+relaxation functions do:</p>
+<pre><code>generic_relax_function:
+  add some slack to the address, as all addresses can move
+  for each possible instruction to shorten the relocation:
+    if possible instruction can fit the target address:
+      replace the relocation
+      cleanup
+      return DONE
+  return DONE</code></pre>
+<p>There&#x27;s one of these functions for each class of relocations that the
+RISC-V toolchain knows how to relax:</p>
+<ul>
+<li><code>_bfd_riscv_relax_call</code>: relaxes two-instruction <code>auipc</code>+<code>jalr</code>
+sequences via the <code>R_RISCV_CALL</code> and <code>R_RISCV_CALL_PLT</code> relocations.</li>
+<li><code>_bfd_riscv_relax_lui</code>: relaxes two-instruction <code>lui</code>+<code>addi</code>-like
+sequences via the <code>R_RISCV_HI20</code>+<code>R_RISCV_LO12_I</code>-like relocation
+pairs.  The second instruction&#x2F;relocation can be any of the various
+instructions that matches a <code>R_RISCV_LO12_I</code> or <code>R_RISCV_LO12_S</code>
+relocation (<code>addi</code>, <code>lw</code>, <code>sd</code>, etc).</li>
+<li><code>_bfd_riscv_relax_pc</code>: Relaxes two-instruction <code>auipc</code>+<code>addi</code>-like
+sequences via the <code>R_RISCV_PCREL_HI20&#x27;+&#x27;R_RISCV_PCREL_LO12_I</code>-like
+relocation pairs.  Much like the <code>lui</code> case there&#x27;s a handful of
+relocation types possible for the second one, all of which are
+PC-relative.</li>
+<li><code>_bfd_riscv_relax_tls_le</code>: Relaxes thread local storage references
+when using the local executable model.  We&#x27;ll talk about TLS is a
+later blog, as there&#x27;s a lot going on here.</li>
+<li><code>_bfd_riscv_relax_align</code>: Relaxes <code>.align</code> directives in text
+sections.  This is another on we&#x27;ll discuss later, but one specific
+interesting constraint here is that <code>R_RISCV_ALIGN</code> relocations must
+be relaxed for correctness, which means they&#x27;re relaxed even when
+relaxations are otherwise disabled.</li>
+</ul>
+<h4 id="relaxing-against-the-global-pointer">Relaxing Against the Global Pointer</h2>
+<p>It may seem like linker relaxation involves a huge amount of
+complexity for a small gain: we trade knowing no <code>.text</code> section symbol
+addresses until link time for shortening a few sequences by a single
+instruction. As it turns out, linker relaxation is very important for
+getting good performance on real code. For our first time looking at
+real code, we&#x27;ll take a look at the Dhrystone benchmark &ndash; in addition
+to being super simple, Dhrystone also spends a lot of time loading from
+global variables and therefor benefits very clearly from linker
+relaxation.</p>
+<p>Let&#x27;s take a look at the Dhrystone source code first. While it&#x27;s a bit
+more complicated than the examples that have been present in this blog
+so far, if you look closely the code is actually pretty
+straightforward. Here&#x27;s the source for one Dhrystone function, along
+with the definitions of the various global variables it references:</p>
+<pre><code>&#x2F;* Global Variables: *&#x2F;
+Boolean         Bool_Glob;
+char            Ch_1_Glob,
+                Ch_2_Glob;
+
+Proc_4 () &#x2F;* without parameters *&#x2F;
+&#x2F;*******&#x2F;
+    &#x2F;* executed once *&#x2F;
+{
+  Boolean Bool_Loc;
+
+  Bool_Loc = Ch_1_Glob == &#x27;A&#x27;;
+  Bool_Glob = Bool_Loc | Bool_Glob;
+  Ch_2_Glob = &#x27;B&#x27;;
+} &#x2F;* Proc_4 *&#x2F;</code></pre>
+<p>As you can see, the code performs three accesses to global variables in
+order to do a simple comparison and a logical operation. While this
+might seem kind of silly, this is what a lot of the Dhrystone benchmark
+looks like. Since Dhrystone is pretty much the only benchmark that will
+actually run <em>everywhere</em> (SPECInt won&#x27;t run on my wristwatch, for
+example), it&#x27;s still used as the baseline for many microarchitectural
+comparisons so we need to make it go fast.</p>
+<p>In order to understand the specific relaxation that&#x27;s being performed in
+this case, it&#x27;s probably best to start with the code the toolchain
+generates before this optimization, which I&#x27;ve copied below:</p>
+<pre><code>0000000040400826 &lt;Proc_4&gt;:
+    40400826:   3fc00797                auipc   a5,0x3fc00
+    4040082a:   f777c783                lbu     a5,-137(a5) # 8000079d &lt;Ch_1_Glob&gt;
+    4040082e:   3fc00717                auipc   a4,0x3fc00
+    40400832:   f7272703                lw      a4,-142(a4) # 800007a0 &lt;Bool_Glob&gt;
+    40400836:   fbf78793                addi    a5,a5,-65
+    4040083a:   0017b793                seqz    a5,a5
+    4040083e:   8fd9                    or      a5,a5,a4
+    40400840:   3fc00717                auipc   a4,0x3fc00
+    40400844:   f6f72023                sw      a5,-160(a4) # 800007a0 &lt;Bool_Glob&gt;
+    40400848:   3fc00797                auipc   a5,0x3fc00
+    4040084c:   04200713                li      a4,66
+    40400850:   f4e78a23                sb      a4,-172(a5) # 8000079c &lt;Ch_2_Glob&gt;
+    40400854:   8082                    ret</code></pre>
+<p>As you can see, this function consists of 13 instructions, 4 of which
+are <code>auipc</code> instructions. All of these <code>auipc</code> instructions are used to
+calculate the addresses of global variables for a subsequent memory
+access, and all of these generated addresses are within a 12-bit offset
+of each other. If you&#x27;re thinking &quot;we only really need one of these
+<code>auipc</code> instructions&quot;, you&#x27;re both right and wrong: while we could
+generate a single <code>auipc</code> (though that requires some GCC work we haven&#x27;t
+done yet and is thus the subject of a future blog post), we can actually
+do one better and get by with <em>zero</em> <code>auipc</code> instructions!</p>
+<p>If you&#x27;ve just gone and pored over the RISC-V ISA manual to find an
+instruction that loads <code>Ch_1_Glob</code> (which lives at <code>0x8000079D</code>) in a
+single instruction then you should give up now, as there isn&#x27;t one.
+There is, of course, a trick &ndash; it is common on register-rich,
+addressing-mode-poor ISAs to have a dedicated ABI register known as the
+global pointer that contains an address in the <code>.data</code> segment. The
+linker is then capable of relaxing accesses to global variables that
+live within a 12-bit signed offset from this value &ndash; essentially we&#x27;ve
+just cached the <code>lui</code> in the global pointer register, optimizing this
+common code path.</p>
+<p>In order to get a bit more visibility into how this works, let&#x27;s take a
+look at a snippet of GCC&#x27;s default linker script for RISC-V:</p>
+<pre><code>&#x2F;* We want the small data sections together, so single-instruction offsets
+   can access them all, and initialized data all before uninitialized, so
+   we can shorten the on-disk segment size.  *&#x2F;
+.sdata          :
+{
+  __global_pointer$ = . + 0x800;
+  *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata .srodata.*)
+  *(.sdata .sdata.* .gnu.linkonce.s.*)
+}
+_edata = .; PROVIDE (edata = .);
+. = .;
+__bss_start = .;
+.sbss           :
+{
+  *(.dynsbss)
+  *(.sbss .sbss.* .gnu.linkonce.sb.*)
+  *(.scommon)</code></pre>
+<p>As you can see, the magic <code>__global_pointer$</code> symbol is defined to point
+<code>0x800</code> bytes past the start of the <code>.sdata</code> section. The <code>0x800</code> magic
+number allows signed 12-bit offsets from <code>__global_pointer$</code> to address
+symbols at the start of the <code>.sdata</code> section. The linker assumes that
+if this symbol is defined, then the <code>gp</code> register contains that value,
+which it can then use to relax accesses to global symbols within that
+12-bit range. The compiler treats the <code>gp</code> register as a constant so it
+doesn&#x27;t need to be saved or restored, which means it is generally only
+written by <code>_start</code>, the ELF entry point. Here&#x27;s an example from the
+RISC-V newlib port&#x27;s <code>crt0.S</code> file</p>
+<pre><code>.option push
+.option norelax
+1:auipc gp, %pcrel_hi(__global_pointer$)
+  addi  gp, gp, %pcrel_lo(1b)
+.option pop</code></pre>
+<p>Note that we need to disable relaxations while setting <code>gp</code>, otherwise
+the linker would relax this two-instruction sequence to <code>mv gp, gp</code></p>
+<p>The actual implementation of the relaxation, which lives in
+<code>_bfd_riscv_relax_lui&#x27; and </code><em>bfd</em>riscv<em>relax</em>pc`, is fairly boring.
+Like all the other relaxations, it performs some bounds checks, deletes
+the unused instruction and then converts the short-offset instruction
+to a different type. We may delve deeper into the implementation of
+various linker relaxations in future blog posts, but for now I&#x27;ll just
+drop the relaxed output here to demonstrate it actually works:</p>
+<pre><code>00000000400003f0 &lt;Proc_4&gt;:
+    400003f0:   8651c783                lbu     a5,-1947(gp) # 80001fbd &lt;Ch_1_Glob&gt;
+    400003f4:   8681a703                lw      a4,-1944(gp) # 80001fc0 &lt;Bool_Glob&gt;
+    400003f8:   fbf78793                addi    a5,a5,-65
+    400003fc:   0017b793                seqz    a5,a5
+    40000400:   00e7e7b3                or      a5,a5,a4
+    40000404:   86f1a423                sw      a5,-1944(gp) # 80001fc0 &lt;Bool_Glob&gt;
+    40000408:   04200713                li      a4,66
+    4000040c:   86e18223                sb      a4,-1948(gp) # 80001fbc &lt;Ch_2_Glob&gt;
+    40000410:   00008067                ret</code></pre>
+<h4 id="12-bit-offsets-aren-t-enough-for-anyone">12-bit Offsets aren&#x27;t Enough for Anyone</h2>
+<p>Just to be clear: linker relaxations are an optimization for the common
+case. The linker transparently emits two-instruction addressing
+sequences for symbols that it cannot optimize. To demonstrate what
+happens when the linker can&#x27;t relax a symbol, let&#x27;s go through another
+example:</p>
+<p>    $ cat relax.c
+    long near;
+    long far[2];
+<br />
+    long data(void) {
+      return near | far;
+    }
+<br />
+    int main() {
+      return data();
+    }
+    $ riscv64-unknown-linux-gnu-gcc relax.c -O3 -o relax &ndash;save-temps
+    $ riscv64-unknown-linux-gnu-objdump -d relax.o
+    relax.o:     file format elf64-littleriscv
+<br />
+    Disassembly of section .text:
+<br />
+    0000000000000000 data:
+       0:   000007b7                lui     a5,0x0
+                            0: R<em>RISCV</em>HI20 near
+                            0: R<em>RISCV</em>RELAX        <em>ABS</em>
+       4:   0007b503                ld      a0,0(a5) # 0 data
+                            4: R<em>RISCV</em>LO12<em>I       near
+                            4: R</em>RISCV<em>RELAX        <em>ABS</em>
+       8:   000007b7                lui     a5,0x0
+                            8: R</em>RISCV<em>HI20 far
+                            8: R</em>RISCV<em>RELAX        <em>ABS</em>
+       c:   0007b783                ld      a5,0(a5) # 0 data
+                            c: R</em>RISCV<em>LO12</em>I       far
+                            c: R<em>RISCV</em>RELAX        <em>ABS</em>
+      10:   8d5d                    or      a0,a0,a5
+      12:   8082                    ret
+<br />
+    Disassembly of section .text.startup:
+<br />
+    0000000000000000 main:
+       0:   1141                    addi    sp,sp,-16
+       2:   e406                    sd      ra,8(sp)
+       4:   00000097                auipc   ra,0x0
+                            4: R<em>RISCV</em>CALL data
+                            4: R<em>RISCV</em>RELAX        <em>ABS</em>
+       8:   000080e7                jalr    ra
+       c:   60a2                    ld      ra,8(sp)
+       e:   2501                    sext.w  a0,a0
+      10:   0141                    addi    sp,sp,16
+      12:   8082                    ret</p>
+<p>Here we can see three relocations groups: two <code>HI20</code>&#x2F;<code>LO12</code> relocation
+pairs and a <code>CALL</code> relocation. In this case, the <code>CALL</code> relocation can
+be relaxed as can the <code>HI20</code>&#x2F;<code>LO12</code> pair that references <code>near</code>, but the
+<code>HI20</code>&#x2F;<code>LO12</code> pair that references <code>far</code> can&#x27;t. In this case the
+linker still functions correctly, producing a single-instruction
+addressing sequence for the <code>near</code> symbol it can relax while just
+relocating the addressing sequence for the <code>far</code> symbol that it can&#x27;t
+reference with a single instruction.</p>
+<p>    $ riscv64-unknown-linux-gnu-objdump -d -r relax
+    Disassembly of section .text:
+<br />
+    0000000000010330 main:
+       10330:       1141                    addi    sp,sp,-16
+       10332:       e406                    sd      ra,8(sp)
+       10334:       0b8000ef                jal     ra,103ec data
+       10338:       60a2                    ld      ra,8(sp)
+       1033a:       2501                    sext.w  a0,a0
+       1033c:       0141                    addi    sp,sp,16
+       1033e:       8082                    ret
+<br />
+    00000000000103ec data:
+       103ec:       8181b503                ld      a0,-2024(gp) # 12038 near
+       103f0:       67e9                    lui     a5,0x1a
+       103f2:       0407b783                ld      a5,64(a5) # 1a040 far
+       103f6:       8d5d                    or      a0,a0,a5
+       103f8:       8082                    ret</p>
+<p>Though it might be a bit redundant at this point, I already had the
+following examples written out so I figured I&#x27;d just leave them here to
+be a bit more explicit:</p>
+<pre><code>--- relax.o
++++ relax
+-      4:   00000097                auipc   ra,0x0
+-                           4: R_RISCV_CALL         data
+-                           4: R_RISCV_RELAX        *ABS*
+-      8:   000080e7                jalr    ra
++  10334:   0b8000ef                jal     ra,103ec data</code></pre>
+<p>In the example above, we can see the <code>R_RISCV_CALL</code> relocation is requested.
+This relocation is defined to operate over an adjacent <code>auipc</code>&#x2F;<code>jalr</code> pair,
+referencing a signed 32-bit PC-relative call target. In this case we were able
+to relax this instruction pair to a single <code>jal</code> instruction as the actual
+call target was within a 21-bit signed offset from the current PC. You&#x27;ll find
+that almost all <code>R_RISCV_CALL</code> relocations will be relaxable, as most code
+expresses some amount of call locality.</p>
+<pre><code>--- relax.o
++++ relax
+-      0:   000007b7                lui     a5,0x0
+-                          0: R_RISCV_HI20         near
+-                          0: R_RISCV_RELAX        *ABS*
+-      4:   0007b503                ld      a0,0(a5) # 0 data
+-                          4: R_RISCV_LO12_I       near
+-                          4: R_RISCV_RELAX        *ABS*
++  103ec:   8181b503                ld      a0,-2024(gp) # 12038 near</code></pre>
+<p>In the example above, we can see a <code>R_RISCV_HI20</code>&#x2F;<code>R_RISCV_LO12_I</code>
+relocation pair is requested. These relocations are each defined to operate
+over a single instruction: the <code>R_RISCV_HI20</code> relocates the 20-bit offset of
+a <code>lui</code> while the <code>R_RISCV_LO12_I</code> relocates the 12-bit offset of various
+I-type instructions (<code>ld</code> in this example). In this case we were able to
+relax this instruction pair to a single <code>ld</code> instruction, as the final symbol
+address was within a 12-bit offset of <code>gp</code>, the global pointer.</p>
+<pre><code>--- relax.o
++++ relax
+-      8:   000007b7                lui     a5,0x0
+-                           8: R_RISCV_HI20         far
+-                           8: R_RISCV_RELAX        *ABS*
+-      c:   0007b783                ld      a5,0(a5) # 0 data
+-                           c: R_RISCV_LO12_I       far
+-                           c: R_RISCV_RELAX        *ABS*
++  103f0:   67e9                    lui     a5,0x1a
++  103f2:   0407b783                ld      a5,64(a5) # 1a040 far</code></pre>
+<p>In the example above, we see another <code>R_RISCV_HI20</code>&#x2F;<code>R_RISCV_LO12_I</code>, but
+this time we can&#x27;t relax it as it&#x27;s not within a 12-bit offset of <code>gp</code>. Note
+that we still generate the correct code for this case by filling out the
+relocations. You will get a link-time error whenever it is impossible to
+correctly relocate a requested relocation, as otherwise the linked executable
+wouldn&#x27;t produce the correct answer.</p>
+<p>Stay tuned, as there&#x27;s a whole lot more to come on linker relaxations in
+future blog posts.</p>
+
+    
+    <h2> <a href="blog/20170911-cmodel.html">September 11, 2017: The RISC-V Code Models </a> </h2>
+    <p>The RISC-V ISA was designed to be both simple and modular. In order to
+achieve these design goals, RISC-V minimizes one of the largest costs in
+implementing complex ISAs: addressing modes. Addressing modes are
+expensive both in small designs (due to decode cost) and large designs
+(due to implicit dependencies). RISC-V only has three addressing modes:</p>
+<ul>
+<li>PC-relative, via the <code>auipc</code>, <code>jal</code> and <code>br*</code> instructions.</li>
+<li>Register-offset, via the <code>jalr</code>, <code>addi</code> and all memory instructions.</li>
+<li>Absolute, via the <code>lui</code> instruction (though arguably this is just
+<code>x0</code>-offset).</li>
+</ul>
+<p>These addressing modes have been carefully selected in order to allow
+for efficient code generation with a minimum of hardware complexity. We
+achieve this simplicity by relying on modern toolchains to optimize
+addressing in software &ndash; this stands in stark contrast to traditional
+ISAs, which implement a plethora of addressing modes in hardware
+instead. Studies have shown that the RISC-V approach is sound: we are
+able to achieve similar code size in benchmarks while having vastly
+simpler decoding rules and a significant amount of free encoding space.</p>
+<p>All these hardware complexity reductions come at the cost of increased
+software complexity. This blog post introduces another bit of software
+complexity in RISC-V: the concept of a code model. Just like
+relocations and relaxations, code models are not specific to RISC-V &ndash;
+in fact, the RISC-V toolchain has fewer code models than most popular
+ISAs, largely because we rely on software optimizations instead of
+wacky addressing modes, which allows our addressing modes to be
+significantly more flexible.</p>
+<h4 id="what-is-a-code-model">What is a Code Model</h2>
+<p>Most programs do not fill the entire address space available to them with
+symbols (most don&#x27;t fill it at all, but those that do tend to fill their
+address space with heap). ISAs tend to take advantage of this locality by
+implementing shorter addressing modes in hardware and relying on software to
+provide larger address modes. The code model determines which software
+addressing mode is used, and, therefore, what constraints are enforced on the
+linked program. Software addressing modes determine how the programmer
+sees addresses, as opposed to hardware addressing modes which determine
+how address bits in instructions are handled. </p>
+<p>Code models are necessary due to the split between the compiler and the linker:
+when generating an unlinked object, the complier doesn&#x27;t know the
+absolute address of any symbol but it still must know what addressing
+mode to use as some addressing modes may require scratch registers to
+operate. As the compiler cannot generate actual addressing code, it
+generates addressing templates (known as
+<a href="20170821-relocations.md">relocations</a>) that the linker can then fix up
+once it knows the actual addresses of each symbol. The code model
+determines what these addressing templates look like, and thus which
+relocations are emitted.</p>
+<p>This is probably best explained with an example. Imagine the following
+C code:</p>
+<p>    long global<em>symbol[2];
+<br />
+    int main() {
+      return global</em>symbol[0] != 0;
+    }</p>
+<p>Even though a single GCC invocation can produce a binary for this simple case,
+under the covers the GCC driver script is actually running the preprocessor,
+then the compiler, then the assembler and finally the linker. The
+<code>--save-temps</code> argument to GCC allows users to see all these intermediate
+files, and is a useful argument for poking around inside the toolchain.</p>
+<pre><code>$ riscv64-unknown-linux-gnu-gcc cmodel.c -o cmodel -O3 --save-temps</code></pre>
+<p>Each step in this run of the GCC wrapper script generates a file:</p>
+<ul>
+<li><code>cmodel.i</code>: The preprocessed source, which expands any preprocessor
+directives (things like <code>#include</code> or <code>#ifdef</code>).</li>
+<li><code>cmodel.s</code>: The output of the actual compiler, which is an assembly file (a
+text file in the RISC-V assembly format).</li>
+<li><code>cmodel.o</code>: The output of the assembler, which is an unlinked object file
+(an ELF file, but not an executable ELF).</li>
+<li><code>cmodel</code>: The output of the linker, which is a linked executable (an
+executable ELF file).</li>
+</ul>
+<p>In order to understand why the code model exists, we must first examine this
+toolchain flow in a bit more detail. Since this is a simple source file with
+no preprocessor macros, the preprocessor run is pretty boring: all it does is
+emit some directives to be used if debugging information is later generated:</p>
+<pre><code>$ cat cmodel.i
+# 1 &quot;cmodel.c&quot;
+# 1 &quot;built-in&quot;
+# 1 &quot;command-line&quot;
+# 31 &quot;command-line&quot;
+# 1 &quot;&#x2F;scratch&#x2F;palmer&#x2F;work&#x2F;upstream&#x2F;riscv-gnu-toolchain&#x2F;build&#x2F;install&#x2F;sysroot&#x2F;usr&#x2F;include&#x2F;stdc-predef.h&quot; 1 3 4
+# 32 &quot;command-line&quot; 2
+# 1 &quot;cmodel.c&quot;
+long global_symbol;
+
+int main() {
+  return global_symbol != 0;
+}</code></pre>
+<p>The preprocessed output is then fed through the compiler, which generates a
+assembly file. This file is plain text that contains RISC-V assembly code and
+therefore is easy to read:</p>
+<pre><code>$ cat cmodel.s
+main:
+  lui   a5,%hi(global_symbol)
+  ld    a0,%lo(global_symbol)(a5)
+  snez  a0,a0
+  ret</code></pre>
+<p>The generated assembly contains a pair of instructions to address
+<code>global_symbol</code>: <code>lui</code> and then <code>ld</code>. This imposes a constraint on the
+address that <code>global_symbol</code> can take on: it must be addressable by a 32-bit
+signed absolute constant (not 32-bit offset from some register or the PC, but
+actually a 32-bit address). Note that the restriction on symbol addresses is
+not related to the size of a pointer on this architecture: specifically pointers
+may still be 64 bits here, but all global symbols must be addressable by a
+32-bit absolute address.</p>
+<p>After the compiler generates assembly, the GCC wrapper script calls the
+assembler to generate an object file. This file is an ELF binary, which can be
+read with a variety of tools provided by Binutils. In case we&#x27;ll use
+<code>objdump</code> to show the symbol table, disassemble the text section and show
+the relocations generated by the assembler:</p>
+<p>    $ riscv64-unknown-linux-gnu-objdump -d -t -r cmodel.o
+<br />
+    cmodel.o:     file format elf64-littleriscv
+<br />
+    SYMBOL TABLE:
+    0000000000000000 l    df <em>ABS</em>  0000000000000000 cmodel.c
+    0000000000000000 l    d  .text  0000000000000000 .text
+    0000000000000000 l    d  .data  0000000000000000 .data
+    0000000000000000 l    d  .bss   0000000000000000 .bss
+    0000000000000000 l    d  .text.startup  0000000000000000 .text.startup
+    0000000000000000 l    d  .comment       0000000000000000 .comment
+    0000000000000000 g     F .text.startup  000000000000000e main
+    0000000000000010       O <em>COM</em>  0000000000000008 global<em>symbol
+<br />
+    Disassembly of section .text.startup:
+<br />
+    0000000000000000 main:
+       0:   000007b7                lui     a5,0x0
+                            0: R</em>RISCV<em>HI20 global</em>symbol
+                            0: R<em>RISCV</em>RELAX        <em>ABS</em>
+       4:   0007b503                ld      a0,0(a5) # 0 main
+                            4: R<em>RISCV</em>LO12<em>I       global</em>symbol
+                            4: R<em>RISCV</em>RELAX        <em>ABS</em>
+       8:   00a03533                snez    a0,a0
+       c:   8082                    ret</p>
+<p>At this point we have an object file, but we still don&#x27;t know the actual
+addresses of any global symbols. This is where there&#x27;s a bit of overlap in the
+roles of each component of the toolchain: it&#x27;s the assembler&#x27;s job to convert
+textual instructions into bits, but in the cases where those bits depend on the
+address of a global symbol (like the <code>lui</code> in the code above, for example)
+the assembler can&#x27;t know what those bits should actually be. In order to allow
+the linker to fill out these bits in the final executable object file, the
+assembler generates entries in a relocation table for every bit range the
+linker is expected to fill out. Relocations define a bit range that the linker
+is meant to fill out when linking the code together. The specific definition
+of any relocation type present in the text section is ISA-specific, the RISC-V
+definitions can be found in our <a href="https://github.com/riscv/riscv-elf-psabi-doc/blob/master/riscv-elf.md">ELF psABI
+document</a>.</p>
+<p>After assembling the program, the GCC wrapper script runs the linker to
+generate an executable. This is another ELF file, but this time it&#x27;s a full
+executable. Since this contains lots of C library code, I&#x27;m going to show only
+the relevant fragments of it here:</p>
+<pre><code>$ riscv64-unknown-linux-gnu-objdump -d -t -r cmodel
+cmodel:     file format elf64-littleriscv
+
+SYMBOL TABLE:
+0000000000012038 g     O .bss	0000000000000010              global_symbol
+...
+
+Disassembly of section .text:
+
+0000000000010330 main:
+ 10330:       67c9                    lui     a5,0x12
+ 10332:       0387b503                ld      a0,56(a5) # 12038 global_symbol
+ 10336:       00a03533                snez    a0,a0
+ 1033a:       8082                    ret</code></pre>
+<p>There are a few interesting things to note here:</p>
+<ul>
+<li>The symbol table contains symbols with actual, absolute values. This is the
+whole point of the linker.</li>
+<li>The text section contains the correct bits to actually reference the global
+symbols, as opposed to just a bunch of 0s.</li>
+<li>The relocations against global symbols have been removed, as they&#x27;re no
+longer necessary. Some relocations may still exist in executables to allow
+for things like dynamic linking, but in this simple case there are none.</li>
+</ul>
+<p>Until now, this example has been using RISC-V&#x27;s default code model
+<a href="#what-does--mcmodel-medlow-mean-">medlow</a>. In order to demonstrate a bit more
+specifically what a code model is it&#x27;s probably best to contrast this with our
+other code model, <a href="#what-does--mcmodel-medany-mean-">medany</a>. The difference
+can be summed up with a single example output:</p>
+<pre><code>0000000000000000 main:
+   0:   00000797                auipc   a5,0x0
+                        0: R_RISCV_PCREL_HI20   global_symbol
+                        0: R_RISCV_RELAX        *ABS*
+   4:   0007b503                ld      a0,0(a5) # 0 main
+                        4: R_RISCV_PCREL_LO12_I .LA0
+                        4: R_RISCV_RELAX        *ABS*
+   8:   00a03533                snez    a0,a0
+   c:   8082                    ret</code></pre>
+<p>Specifically, the <a href="#what-does--mcmodel-medany-mean-">medany</a> code model
+generates <code>auipc</code>&#x2F;<code>ld</code> pairs to refer to global symbols, which allows the
+code to be linked at any address; while
+<a href="#what-does--mcmodel-medlow-mean-">medlow</a> generates <code>lui</code>&#x2F;<code>ld</code> pairs to
+refer to global symbols, which restricts the code to be linked around address
+zero. They both generate 32-bit signed offsets for referring to symbols, so
+they both restrict the generated code to being linked within a 2GiB window.</p>
+<h4 id="what-does--mcmodel-medlow-mean-">What does -mcmodel=medlow mean?</h2>
+<p>This selects the medium-low <a href="#what-is-a-code-model-">code model</a>, which means
+program and its statically defined symbols must lie within a single 2 GiB
+address range and must lie between absolute addresses -2 GiB and +2 GiB.
+Addressing for global symbols uses <code>lui</code>&#x2F;<code>addi</code> instruction pairs, which
+emit the <code>R_RISCV_HI20</code>&#x2F;<code>R_RISCV_LO12_I</code> sequences. Here&#x27;s an example of
+some generated code using the medlow code model:</p>
+<p>    $ cat cmodel.c 
+    long global<em>symbol[2];
+<br />
+    int main() {
+      return global</em>symbol[0] != 0;
+    }
+<br />
+    $ riscv64-unknown-linux-gnu-gcc cmodel.c -o cmodel -O3 &ndash;save-temps -mcmodel=medlow
+<br />
+    $ cat cmodel.s
+    main:
+            lui     a5,%hi(global<em>symbol)
+            ld      a0,%lo(global</em>symbol)(a5)
+            snez    a0,a0
+            ret
+<br />
+    $ riscv64-unknown-linux-gnu-objdump -d -r cmodel.o
+    cmodel.o:     file format elf64-littleriscv
+<br />
+    Disassembly of section .text.startup:
+<br />
+    0000000000000000 main:
+       0:   000007b7                lui     a5,0x0
+                            0: R<em>RISCV</em>HI20 global<em>symbol
+                            0: R</em>RISCV<em>RELAX        <em>ABS</em>
+       4:   0007b503                ld      a0,0(a5) # 0 main
+                            4: R</em>RISCV<em>LO12</em>I       global<em>symbol
+                            4: R</em>RISCV<em>RELAX        <em>ABS</em>
+       8:   00a03533                snez    a0,a0
+       c:   8082                    ret
+<br />
+    $ riscv64-unknown-linux-gnu-objdump -d -r cmodel
+    Disassembly of section .text:
+<br />
+    0000000000010330 main:
+       10330:       67c9                    lui     a5,0x12
+       10332:       0387b503                ld      a0,56(a5) # 12038 global</em>symbol
+       10336:       00a03533                snez    a0,a0
+       1033a:       8082                    ret</p>
+<h4 id="what-does--mcmodel-medany-mean-">What does -mcmodel=medany mean?</h2>
+<p>This selects the medium-any <a href="#what-is-a-code-model-">code model</a>, which means
+the program and its statically defined symbols must lie within any single 2 GiB
+address range. Addressing for global symbols uses <code>lui</code>&#x2F;<code>addi</code> instruction
+pairs, which emit the <code>R_RISCV_PCREL_HI20</code>&#x2F;<code>R_RISCV_PCREL_LO12_I</code>
+sequences. Here&#x27;s an example of some generated code using the medany code
+model (with <a href="#what-does--m-explicit-relocs-mean-">-mexplicit-relocs</a>, in order
+to make this match the <a href="#what-does--mcmodel-medlow-mean-">-mcmodel=medlow</a>
+example a bit more cleanly):</p>
+<pre><code>$ cat cmodel.c
+long global_symbol[2];
+
+int main() {
+  return global_symbol[0] != 0;
+}
+
+$ riscv64-unknown-linux-gnu-gcc cmodel.c -o cmodel -O3 --save-temps -mcmodel=medany -mexplicit-relocs
+
+$ cat cmodel.s
+main:
+        .LA0: auipc     a5,%pcrel_hi(global_symbol)
+        ld      a0,%pcrel_lo(.LA0)(a5)
+        snez    a0,a0
+        ret
+
+$ riscv64-unknown-linux-gnu-objdump -d -r cmodel.o
+cmodel.o:     file format elf64-littleriscv
+
+SYMBOL TABLE:
+0000000000000000 l    df *ABS*  0000000000000000 cmodel.c
+0000000000000000 l    d  .text  0000000000000000 .text
+0000000000000000 l    d  .data  0000000000000000 .data
+0000000000000000 l    d  .bss   0000000000000000 .bss
+0000000000000000 l    d  .text.startup  0000000000000000 .text.startup
+0000000000000000 l       .text.startup  0000000000000000 .LA0
+0000000000000000 l    d  .comment       0000000000000000 .comment
+0000000000000000 g     F .text.startup  000000000000000e main
+0000000000000010       O *COM*  0000000000000008 global_symbol
+
+Disassembly of section .text.startup:
+
+0000000000000000 main:
+   0:   00000797                auipc   a5,0x0
+                        0: R_RISCV_PCREL_HI20   global_symbol
+                        0: R_RISCV_RELAX        *ABS*
+   4:   0007b503                ld      a0,0(a5) # 0 main
+                        4: R_RISCV_PCREL_LO12_I .LA0
+                        4: R_RISCV_RELAX        *ABS*
+   8:   00a03533                snez    a0,a0
+   c:   8082                    ret
+
+$ riscv64-unknown-linux-gnu-objdump -d -r cmodel.o
+Disassembly of section .text:
+
+0000000000010330 main:
+   10330:       00002797                auipc   a5,0x2
+   10334:       d087b503                ld      a0,-760(a5) # 12038 global_symbol
+   10338:       00a03533                snez    a0,a0
+   1033c:       8082                    ret
+        ...</code></pre>
+<p>Note that that <code>-mcmodel=medany</code> currently defaults to
+<code>-mno-explicit-relocs</code>, which can have an appreciable performance
+effect. There&#x27;s a bit of nuance in that performance effect, so we&#x27;ll
+discuss it in a later blog.</p>
+<h4 id="the-difference-between-a-code-model-and-an-abi">The Difference Between a Code Model and an ABI</h2>
+<p>One commonly misunderstood distinction is the difference between a code
+model and an ABI. The ABI determines the interface between functions,
+while the code model determines how code is generated within a function.
+Specifically: both RISC-V code models limit the code that addresses
+symbols to 32-bit offsets, but on RV64I-based systems they still encode
+pointers as 64-bit.</p>
+<p>Specifically this means that functions compiled with <code>-mcmodel=medany</code>
+can be called by functions compiled with <code>-mcmodel=medlow</code>, and vice
+versa. The restrictions placed on symbol addressing by both of these
+functions will need to be met in order to allow an executable to be
+linked, but that constraint is just generally true. As the code model
+doesn&#x27;t affect the layout of structures in memory or how arguments are
+passed between functions it&#x27;s largely transparent to programs.</p>
+<p>Contrast this to linking code generated for two different ABIs, which
+is invalid. Imagine a function that contains a <code>double</code> argument. A
+function compiled for <code>lp64d</code> will expect this argument in a register.
+When called by a function compiled for <code>lp64</code> that places the argument
+in an X register the program won&#x27;t work correctly.</p>
+<h4 id="code-models-and-linker-relaxation">Code Models and Linker Relaxation</h2>
+<p>Up until this point we haven&#x27;t discussed how code models interact with
+<a href="20170828-linker_relaxation.html">linker relaxation</a>, largely because
+the answer is now fairly simple: it all just works, assuming you use the
+RISC-V branches of the various toolchain components as there are a
+handful of patches that haven&#x27;t found their way upstream yet.</p>
+<p>Linker relaxation is actually an important enough optimization that it
+affected the RISC-V ISA in a significant manner: linker relaxation
+allows RISC-V to forgo an addressing mode that would otherwise be
+required to get reasonable performance on many codebases. On RISC-V
+targets, the following addressing modes are available:</p>
+<ul>
+<li>Symbols within a 7-bit offset from 0 (or from <code>__global_pointer$</code>): 2 bytes.</li>
+<li>Symbols within a 12-bit offset from 0 (or from <code>__global_pointer$</code>): 4 bytes.</li>
+<li>Symbols within a 17-bit offset from 0: 6 bytes.</li>
+<li>Symbols within a 32-bit offset from 0: 8 bytes. On RV32I this is the
+entire address space.</li>
+</ul>
+<p>This can all be achieved with a single code model, and while using a
+single hardware addressing mode (register+offset) via eight instruction
+formats (U, I, S, CI, CR, CIW, CL, and CS) without any mode bits. You
+could view this as a sort of variable-length address encoding that&#x27;s
+optional to support in hardware &ndash; for more information see the
+&quot;Compressed Macro-Op Fusion&quot; paper. As this compressing is all
+implemented transparently by the linker, we only need a single code
+model. Contrast this behavior with the ARMv8 GCC port, which requires
+selecting a different code model for each of the address generation
+sequences it can emit.<br /></p>
+<p>Achieving variable-length addressing sequences is usually something
+reserved for CISC processors, which achieve this by implementing a
+plethora of addressing modes in hardware and opportunistically shrinking
+addressing sequences at assembly time when possible. The RISC-V method
+of using fusible multi-instruction addressing sequences and linker
+relaxation has the advantages of both allowing simple implementations
+and resulting in similar code size.</p>
+
+    
+    <h2> <a href="blog/20170918-multilib.html">September 18, 2017: Per-`march` and per-`mabi` Library Paths on RISC-V Systems </a> </h2>
+    <p>A <a href="20170814-march_mabi_mtune.html">previous blog</a> described how the
+<code>-march</code> and <code>-mabi</code> command-line arguments to GCC can be used to
+control code generation for the sources you compile as a user, but most
+programs require linking against system libraries in order to function
+correctly. Since users generally don&#x27;t want to compile every library
+along with their program, either because they&#x27;re too complicated or
+because they&#x27;re meant to be shared, a mechanism is needed for linking against
+the correct set of system libraries to match the ISA of the user&#x27;s
+target system and the ABI of the user&#x27;s generated code. </p>
+<p>The mechanism for handling multiple sets of system libraries is known as
+&quot;multilib&quot;. Like most parts of the RISC-V toolchain, the multilib
+mechanism is shared between all architecture ports but the specifics of
+how it applies to RISC-V is specific to our ISA. As RISC-V is a
+modular ISA, it was natural to have extensive multilib support from the
+start. This allows our multilib implementation to be significantly
+cleaner than a lot of other architectures, which is good because the
+plethora of ISAs and ABIs we have necessitates good multilib support.</p>
+<h4 id="the-gcc-compiler-wrapper">The GCC Compiler Wrapper</h2>
+<p>As discussed in an earlier blog post, the <code>gcc</code> command that users
+directly interact with is a actually just a wrapper that calls each step
+in the toolchain in order: preprocess, compile, assemble and link your
+program. <code>gcc</code> isn&#x27;t actually a script, but instead a small C program
+that orchestrates the compilation. The architecture-specific hooks for
+this program consist of a domain-specific language that is specific to
+GCC&#x27;s command-line argument handling and describes how the argument to the
+<code>gcc</code> wrapper should be transformed as they are passed to the various
+other tools that are called.</p>
+<p>In order to ensure things are sufficiently complicated, there are three
+different languages used to describe how paths are mangled between the
+user&#x27;s invocation of <code>gcc</code> and the invocation of <code>cc1</code> or <code>collect2</code>
+that actually does the work. All of these are specific to GCC
+command-line argument parsing. The <code>gcc</code> command-line wrapper uses
+these tools in various combinations to specify the following multilib
+related arguments:</p>
+<ul>
+<li>The assembler needs to know the ELF class to generate, either ELF32 or
+ELF64 depending on the target processor&#x27;s architecture.</li>
+<li>The linker needs to know the link-time paths that should be searched
+for libraries.</li>
+<li>The assembler needs to know the ABI, so it can fill out the relevant
+ELF flags. This lets the linker to disallow linking objects of different
+ABIs, which would be incompatible.</li>
+<li>The linker needs to know the path to the dynamic linker so it can fill
+out the ELF interpreter field. The dynamic linker has paths built
+into it to know where to search for libraries.</li>
+<li>The linker needs to know the C runtime files that should be linked
+into executables, as well as any additional libraries that should be
+linked in by default such as <code>libatomic</code> or <code>libgloss</code>.</li>
+</ul>
+<p>All these tools are somewhat coupled together, so we&#x27;ll go over each
+below and describe which of the above arguments each tool helps specify.</p>
+<h5 id="---spec--domain-specific-language"><code>*_SPEC</code> Domain-Specific Language</h3>
+<p>The lowest-level, and therefore most general, of the three languages used
+in describing GCC command-line argument handling is the language used in
+the various <code>*_SPEC</code> macros that targets can define. These macros
+describe the transformations used to convert the command-line arguments
+for every tool GCC calls, so while they&#x27;re not specific to multilib path
+handling they&#x27;re used to produce the full set of argument to the linker
+so I felt they were at least worth mentioning. One macro is defined for
+each of the target programs: for example <code>ASM_SPEC</code> defines how to
+transform command-line arguments for the assembler, <code>LINK_SPEC</code> for the
+linker, etc.</p>
+<p>The <code>*_SPEC</code> macros control a string-to-string transformation that
+converts the command-line arguments of the <code>gcc</code> command to those passed
+to another command. While I recall at some point having seen some
+documentation on what can go in these macros, the best I can find right now
+lives in the <a href="https://gcc.gnu.org/onlinedocs/gccint/Driver.html">Controlling the Compilation Driver</a>
+section of the
+GCC documentation. Since that doesn&#x27;t really specify how any of that
+works, I&#x27;ll try to describe the bits we actually use here &ndash; most of our
+port came from reading the code in other ports and from trial and error.</p>
+<p>As an example of how one of these <code>*_SPEC</code> lines behaves, let&#x27;s look at
+RISC-V&#x27;s <code>STARTFILE_PREFIX_SPEC</code> macro, which determines where the
+linker should look for C runtime startup files like <code>crt0.o</code>:</p>
+<pre><code>#define XLEN_SPEC \
+  &quot;%{march=rv32*:32}&quot; \
+  &quot;%{march=rv64*:64}&quot; \
+
+#define ABI_SPEC \
+  &quot;%{mabi=ilp32:ilp32}&quot; \
+  &quot;%{mabi=ilp32f:ilp32f}&quot; \
+  &quot;%{mabi=ilp32d:ilp32d}&quot; \
+  &quot;%{mabi=lp64:lp64}&quot; \
+  &quot;%{mabi=lp64f:lp64f}&quot; \
+  &quot;%{mabi=lp64d:lp64d}&quot; \
+
+#define STARTFILE_PREFIX_SPEC                   \
+   &quot;&#x2F;lib&quot; XLEN_SPEC &quot;&#x2F;&quot; ABI_SPEC &quot;&#x2F; &quot;           \
+   &quot;&#x2F;usr&#x2F;lib&quot; XLEN_SPEC &quot;&#x2F;&quot; ABI_SPEC &quot;&#x2F; &quot;       \
+   &quot;&#x2F;lib&#x2F; &quot;                                     \
+   &quot;&#x2F;usr&#x2F;lib&#x2F; &quot;</code></pre>
+<p>This is a pretty standard <code>*_SPEC</code> definition for RISC-V: they consume
+the entire set of <code>gcc</code> command-line arguments as a space-separated
+list, filter that through some pattern matching, perform a substitution
+and then pass the result as the space-separated argument list to some
+other command. We only use a handful of patterns:</p>
+<ul>
+<li><code>&quot;STRING&quot;</code>: pass <code>&quot;STRING&quot;</code> directly into the output. Anything not
+wrapped in <code>%{</code> and <code>}</code> is passed directly to the output.</li>
+<li><code>%{argument}</code>: if <code>-argument</code> is in the input as a whole word, then
+pass <code>-argument</code> to the output.</li>
+<li><code>%{argument:substitution}</code>: if <code>-argument</code> is in the input as a whole
+word, then pass the substitution into the output. These recurse, so
+something like <code>%{arg1:%{arg2:-arg3}}</code> passes <code>-arg3</code> if both <code>-arg1</code>
+and <code>-arg2</code>.</li>
+<li><code>%{glob:substitution}</code>: if an argument matches <code>-glob</code>, pass
+<code>substitution</code> to the output. Like above, <code>substitution</code> can be
+recursive. The best reference I could find for the glob syntax is that
+it looks like very simple shell globbing. For example,
+<code>%{march=rv32*:32}</code> will pass <code>32</code> if passed any of <code>-march=rv32i</code>,
+<code>-march=rv32imafdc</code>, or <code>-march=rv32INVALID_ISA_STRING</code> (though of
+course GCC will catch the last one as part of command-line argument
+parsing).</li>
+<li><code>%{!glob:substitution}</code>: like the above, but passes substitution if
+<code>-glob</code> isn&#x27;t present.</li>
+</ul>
+<p>That&#x27;s about the extent of what we put in the <code>*_SPEC</code> macros used by
+the RISC-V port: not all that interesting, just a bit of text pattern
+matching. </p>
+<ul>
+<li><code>-march=rv32imafdc -mabi=ilp32d</code>: <code>&#x2F;lib32&#x2F;ilp32d&#x2F; &#x2F;usr&#x2F;lib32&#x2F;ilp32d&#x2F;
+&#x2F;lib &#x2F;usr&#x2F;lib</code></li>
+<li><code>-march=rv32imafdc -mabi=ilp32</code>: <code>&#x2F;lib32&#x2F;ilp32&#x2F; &#x2F;usr&#x2F;lib32&#x2F;ilp32&#x2F;
+&#x2F;lib &#x2F;usr&#x2F;lib</code></li>
+<li><code>-march=rv32i -mabi=ilp32</code>: <code>&#x2F;lib32&#x2F;ilp32&#x2F; &#x2F;usr&#x2F;lib32&#x2F;ilp32&#x2F; &#x2F;lib
+&#x2F;usr&#x2F;lib</code></li>
+<li><code>-march=rv64i -mabi=ilp32</code>: <code>&#x2F;lib64&#x2F;ilp32&#x2F; &#x2F;usr&#x2F;lib64&#x2F;ilp32&#x2F; &#x2F;lib
+&#x2F;usr&#x2F;lib</code></li>
+</ul>
+<h5 id="target-fragments">Target Fragments</h3>
+<p>Since the multilib path descriptions for many targets are too
+complicated to be described using the spec DSL, GCC contains a second
+DSL that&#x27;s used exclusively to specify the library paths in multilib
+systems. There&#x27;s a bit more documentation on what this should do in
+GCC&#x27;s <a href="https://gcc.gnu.org/onlinedocs/gccint/Target-Fragment.html">target fragment</a>
+section. To sum things up, there&#x27;s four
+variables set in this file by the RISC-V port:</p>
+<ul>
+<li><code>MULTILIB_OPTIONS</code>: Contains the set of command-line arguments that
+should be considered when expanding multilib paths. Options that are
+mutually exclusive are separated by slashes, and groups of those that
+are unrelated are separated by spaces.</li>
+<li><code>MULTILIB_PATHS</code>: A space-separated list of the path components that
+correspond to each of the above arguments. Multilib paths will be
+constructed by joining the paths that correspond to the passed
+arguments with slashes.</li>
+<li><code>MULTILIB_MATCHES</code>: When two multilib-related arguments are similar
+enough that we should use the same library paths when linking in both
+modes, the mappings go in here.</li>
+<li><code>MULTILIB_REQUIRED</code>: Without this argument, GCC will build libraries
+that cover the cartesian product of what&#x27;s in <code>MULTILIB_OPTIONS</code>. On
+systems where that&#x27;s too many libraries, this variable controls the
+subset that&#x27;s actually built.</li>
+</ul>
+<p>On RISC-V we have way too many ISA&#x2F;ABI combinations to build every
+combination and ship it as a library, so we heavily restrict the set that
+is actually built via the <code>MULTILIB_REQUIRED</code> variable &ndash; without this
+we&#x27;d end up with hundreds of libraries built, the vast majority of which
+would never be used because they represent systems that don&#x27;t make a
+whole lot of sense &ndash; for example, who would build a system with
+double-precision floating point but no integer multiplier?</p>
+<p>These variables are then provided as arguments to the <code>gcc&#x2F;genmultilib</code>
+script, which produces both the tables to decode these arguments that
+the <code>gcc</code> wrapper uses and the input to various build scripts that
+instruct GCC to build many copies of each library it installs (for
+example, <code>libgcc.so</code>).</p>
+<h5 id="risc-v-s--multilib-generator--script">RISC-V&#x27;s <code>multilib-generator</code> Script</h3>
+<p>RISC-V was designed to be a modular ISA. As a result we already have
+over a hundred ISA and ABI combinations supported by the toolchain, and
+that number will only ever increase. While we aim to support all these
+combinations in the toolchain, it would be unreasonable to expect users
+to build all of these libraries (or even to download all of them as part
+of a distribution).</p>
+<p>To fit this all into GCC&#x27;s target fragment framework we set
+<code>MULTILIB_OPTIONS</code> to contain many targets and then set
+<code>MULTLIB_REQUIRED</code> to the set we actually want to build. We then
+slightly increase the set of supported ISA&#x2F;ABI pairs by adding some
+relevant entries to <code>MULTILIB_MATCHES</code>. Since typing
+all these in by hand is a pain, we instead use a script to generate our
+target fragment (which in turn is the input to the <code>genmultilibs</code>
+script, which then generates the input to the <code>gcc</code> compiler wrapper,
+which then generates command-line arguments to <code>collect2</code> to actually
+do the linking).</p>
+<p>The script is called <code>multilib-generator</code> and is written in Python. It
+takes a list of dash separated arguments on the command line and
+produces a target fragment that implements the multilib configuration
+that those arguments describe. The script isn&#x27;t really meant to be used
+by end users so it&#x27;s not well documented, but if you&#x27;re trying to
+produce a toolchain with a different set of multilibs than the default
+set in GCC then you&#x27;ll have to deal with it.</p>
+<p>Each argument is made up of four dash-separated parts. The first two
+parts control the multilibs that will actually be built. For example:</p>
+<pre><code># This file was generated by multilib-generator with the command:
+#  .&#x2F;multilib-generator ARCH0-ABI0-- ARCH1-ABI1--
+MULTILIB_OPTIONS = march=ARCH0&#x2F;march=ARCH1 mabi=ABI0&#x2F;mabi=ABI1
+MULTILIB_DIRNAMES = ARCH0 \
+ARCH1 ABI0 \
+ABI1
+MULTILIB_REQUIRED = march=ARCH0&#x2F;mabi=ABI0 \
+march=ARCH1&#x2F;mabi=ABI1
+MULTILIB_REUSE =</code></pre>
+<p>will generate two multilibs: &quot;-march=ARCH0 -mabi=ABI0&quot; and &quot;-march=ARCH1
+-mabi=ABI1&quot;. Any other march&#x2F;mabi pair will result in GCC using the default
+multilib (the one just installed in &quot;lib&quot;), which will probably cause an error
+when linking. This &quot;fallback to the default&quot; behavior is something baked
+into GCC, and while it can be a bit problematic, we don&#x27;t have the time to
+fix it right now. If you want to build an extra multilib, you should add
+an additional argument to <code>multilib-generator</code> that specifies the
+ISA&#x2F;ABI pair for that multilib.</p>
+<pre><code># This file was generated by multilib-generator with the command:
+#  .&#x2F;multilib-generator ARCH0-ABI0-ARCHa,ARCHb-
+MULTILIB_OPTIONS = march=ARCH0&#x2F;march=ARCHa&#x2F;march=ARCHb mabi=ABI0
+MULTILIB_DIRNAMES = ARCH0 \
+ARCHa \
+ARCHb ABI0
+MULTILIB_REQUIRED = march=ARCH0&#x2F;mabi=ABI0
+MULTILIB_REUSE = march.ARCH0&#x2F;mabi.ABI0=march.ARCHa&#x2F;mabi.ABI0 \
+march.ARCH0&#x2F;mabi.ABI0=march.ARCHb&#x2F;mabi.ABI0</code></pre>
+<p>The next two parts control <code>MULTILIB_REUSE</code>, which specifies how GCC
+searches for multilibs that don&#x27;t exactly match those built by
+<code>MULTLIB_REQUIRED</code>. Both specify an additional set of comma-separated
+&#x27;-march&#x27; arguments that map to the multilib specified by the first two
+arguments.</p>
+<p>Arguments of the third position are simpler: it&#x27;s a comma-separated list
+of additional ISA values that should be mapped to the multilib specified
+by the first two parts. For example:</p>
+<pre><code># This file was generated by multilib-generator with the command:
+#  .&#x2F;multilib-generator ARCH0-ABI0-ARCHa,ARCHb-
+MULTILIB_OPTIONS = march=ARCH0&#x2F;march=ARCHa&#x2F;march=ARCHb mabi=ABI0
+MULTILIB_DIRNAMES = ARCH0 \
+ARCHa \
+ARCHb ABI0
+MULTILIB_REQUIRED = march=ARCH0&#x2F;mabi=ABI0
+MULTILIB_REUSE = march.ARCH0&#x2F;mabi.ABI0=march.ARCHa&#x2F;mabi.ABI0 \
+march.ARCH0&#x2F;mabi.ABI0=march.ARCHb&#x2F;mabi.ABI0</code></pre>
+<p>adds two additional ISAs that map the generated multilib: &quot;-march=ARCH0
+-mabi=ABI0&quot; will be used when passed any of &quot;-march=ARCH0 -mabi=ABI0&quot;,
+&quot;-march=ARCHa -mabi=ABI0&quot;, or &quot;-march=ARCHb -mabi=ABI0&quot;. You can
+specify these when there is more than one generated multilib, the
+additional ISAs apply to the multilib that&#x27;s in the same argument.</p>
+<p>The fourth argument is very similar to the first, but rather than
+specifying the whole ISA that should be mapped to the specified
+multilib, it just specifies an additional suffix that should be mapped.
+For example:</p>
+<pre><code># This file was generated by multilib-generator with the command:
+#  .&#x2F;multilib-generator ARCH0-ABI0--c,d
+MULTILIB_OPTIONS = march=ARCH0&#x2F;march=ARCH0c&#x2F;march=ARCH0d mabi=ABI0
+MULTILIB_DIRNAMES = ARCH0 \
+ARCH0c \
+ARCH0d ABI0
+MULTILIB_REQUIRED = march=ARCH0&#x2F;mabi=ABI0
+MULTILIB_REUSE = march.ARCH0&#x2F;mabi.ABI0=march.ARCH0c&#x2F;mabi.ABI0 \
+march.ARCH0&#x2F;mabi.ABI0=march.ARCH0d&#x2F;mabi.ABI0</code></pre>
+<p>adds two additional ISAs that map the generated multilib: &quot;-march=ARCH0
+-mabi=ABI0&quot; will be used when passed any of &quot;-march=ARCH0 -mabi=ABI0&quot;,
+&quot;-march=ARCH0c -mabi=ABI0&quot;, or &quot;-march=ARCH0d -mabi=ABI0&quot; &ndash; as you can
+see, largely the same as above</p>
+<h4 id="other-multlib-aware-components">Other Multlib-Aware Components</h2>
+<p>While GCC handles the vast majority of the multilib support, there&#x27;s a
+handful of other components of the system that contribute in other ways
+to our multilib support:</p>
+<ul>
+<li><code>ld</code>, the linker, refuses to link objects with incompatible ABIs.
+While this doesn&#x27;t directly support multilib, it does prevent it from
+getting screwed up silently.</li>
+<li><code>ld.so</code>, the dynamic loader, has some multilib paths baked into it so
+it can search for libraries correctly. We compile one dynamic loader
+for each multilib and then use GCC to fill out the corresponding ELF
+interpreter field, so there&#x27;s not much going on in glibc here.</li>
+</ul>
+<h4 id="the-short-way">The Short Way</h2>
+<p>You might be thinking &quot;that&#x27;s super complicated, all I really want to do
+here is just know which library paths are used by my compiler&quot;. While
+you could derive this from looking at the GCC source code, it&#x27;s simpler
+to just determine the multilib set experimentally using something like
+the following script:</p>
+<pre><code>#!&#x2F;bin&#x2F;bash
+for abi in ilp32 ilp32f ilp32d lp64 lp64f lp64d; do
+  for isa in rv32e rv32i rv64i; do
+    for m in &quot;&quot; m; do
+      for a in &quot;&quot; a; do
+        for f in &quot;&quot; f fd; do
+          for c in &quot;&quot; c; do
+            readlink -f $(riscv64-unknown-elf-gcc -march=$isa$m$a$f$c -mabi=$abi -print-search-dirs | grep ^libraries | sed &#x27;s&#x2F;:&#x2F; &#x2F;g&#x27;) | grep &#x27;riscv64-unknown-elf&#x2F;lib&#x27; | grep -ve &#x27;lib$&#x27; | sed &#x27;s@^.*&#x2F;lib&#x2F;@@&#x27; | while read path; do
+              echo &quot;riscv64-unknown-elf-gcc -march=$isa$m$a$f$c -mabi=$abi =&gt; $path&quot;
+            done
+          done
+        done
+      done
+    done
+  done
+done</code></pre>
+<p>which produces the entire set of multilibs we support, along with their
+corresponding arguments:</p>
+<pre><code>riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 =&gt; rv32i&#x2F;ilp32
+riscv64-unknown-elf-gcc -march=rv32ic -mabi=ilp32 =&gt; rv32i&#x2F;ilp32
+riscv64-unknown-elf-gcc -march=rv32iac -mabi=ilp32 =&gt; rv32iac&#x2F;ilp32
+riscv64-unknown-elf-gcc -march=rv32im -mabi=ilp32 =&gt; rv32im&#x2F;ilp32
+riscv64-unknown-elf-gcc -march=rv32imc -mabi=ilp32 =&gt; rv32im&#x2F;ilp32
+riscv64-unknown-elf-gcc -march=rv32imac -mabi=ilp32 =&gt; rv32imac&#x2F;ilp32
+riscv64-unknown-elf-gcc -march=rv32imafc -mabi=ilp32f =&gt; rv32imafc&#x2F;ilp32f
+riscv64-unknown-elf-gcc -march=rv32imafdc -mabi=ilp32f =&gt; rv32imafc&#x2F;ilp32f
+riscv64-unknown-elf-gcc -march=rv64imac -mabi=lp64 =&gt; rv64imac&#x2F;lp64
+riscv64-unknown-elf-gcc -march=rv64imafdc -mabi=lp64d =&gt; rv64imafdc&#x2F;lp64d</code></pre>
+<p>or for the Linux toolchain:</p>
+<pre><code>riscv64-unknown-linux-gnu-gcc -march=rv32ima -mabi=ilp32 =&gt; lib32&#x2F;ilp32
+riscv64-unknown-linux-gnu-gcc -march=rv32imac -mabi=ilp32 =&gt; lib32&#x2F;ilp32
+riscv64-unknown-linux-gnu-gcc -march=rv32imaf -mabi=ilp32 =&gt; lib32&#x2F;ilp32
+riscv64-unknown-linux-gnu-gcc -march=rv32imafc -mabi=ilp32 =&gt; lib32&#x2F;ilp32
+riscv64-unknown-linux-gnu-gcc -march=rv32imafd -mabi=ilp32 =&gt; lib32&#x2F;ilp32
+riscv64-unknown-linux-gnu-gcc -march=rv32imafdc -mabi=ilp32 =&gt; lib32&#x2F;ilp32
+riscv64-unknown-linux-gnu-gcc -march=rv32imafd -mabi=ilp32d =&gt; lib32&#x2F;ilp32d
+riscv64-unknown-linux-gnu-gcc -march=rv32imafdc -mabi=ilp32d =&gt; lib32&#x2F;ilp32d
+riscv64-unknown-linux-gnu-gcc -march=rv64ima -mabi=lp64 =&gt; lib64&#x2F;lp64
+riscv64-unknown-linux-gnu-gcc -march=rv64imac -mabi=lp64 =&gt; lib64&#x2F;lp64
+riscv64-unknown-linux-gnu-gcc -march=rv64imaf -mabi=lp64 =&gt; lib64&#x2F;lp64
+riscv64-unknown-linux-gnu-gcc -march=rv64imafc -mabi=lp64 =&gt; lib64&#x2F;lp64
+riscv64-unknown-linux-gnu-gcc -march=rv64imafd -mabi=lp64 =&gt; lib64&#x2F;lp64
+riscv64-unknown-linux-gnu-gcc -march=rv64imafdc -mabi=lp64 =&gt; lib64&#x2F;lp64
+riscv64-unknown-linux-gnu-gcc -march=rv64imafd -mabi=lp64d =&gt; lib64&#x2F;lp64d
+riscv64-unknown-linux-gnu-gcc -march=rv64imafdc -mabi=lp64d =&gt; lib64&#x2F;lp64d</code></pre>
+<h5 id="the-rationale-behind-our-multilib-sets">The Rationale Behind Our Multilib Sets</h3>
+<p>While it may seem like the set of multilibs that are part of our default
+set is somewhat arbitrary, we actually put quite a lot of thought into
+each one. Most of the work here went into the embedded set, so let&#x27;s
+just go through the list and describe why each one exists:</p>
+<ul>
+<li><code>rv32i&#x2F;ilp32</code>: The simplest RISC-V ISA. While we don&#x27;t expect this to
+see much commercial use, we expect that it&#x27;ll get a lot of educational
+and hobbyist use. Also, it seems a bit odd not to support the base
+ISA well &ndash; as otherwise what&#x27;s the point of one :).</li>
+<li><code>rv32iac&#x2F;ilp32</code>: Despite there being lots of tricks to produce small
+multipliers that are arbitrarily slow, some people seem to be allergic
+to hardware multiplication. This target is there to satisfy those
+people.</li>
+<li><code>rv32im&#x2F;ilp32</code>: This exists largely to support cores retrofitted from
+other ISAs where simple memory systems preclude the implementation of
+both the A and C extensions.</li>
+<li><code>rv32imac&#x2F;ilp32</code>: We expect this to get lots of use, it&#x27;s probably
+what you&#x27;d want to build if you&#x27;re building a standalone
+microcontroller chip.</li>
+<li><code>rv32imafc&#x2F;ilp32f</code>: A 32-bit, floating-point target. The other option
+here would have been <code>rv32imafdc&#x2F;ilp32d</code>, but we chose this instead
+under the assumption that if you could deal with having a 64-bit FPU
+that you&#x27;d probably just want to build a 64-bit core.</li>
+<li><code>rv64imac&#x2F;lp64</code>: This will probably be the RISC-V ISA configuration that
+has the largest number of cores produced for the near future, as there
+aren&#x27;t any good options for deeply embedded cores (think power
+management units, IP control cores, etc) that can talk to SOCs with
+addresses spaces larger than 32 bits.</li>
+<li><code>rv64imafdc&#x2F;lp64d</code>: The &quot;full featured&quot; embedded core. These probably
+won&#x27;t be produced as embedded cores directly, but we think that people
+will repurpose Linux-class cores as embedded cores as Linux isn&#x27;t that
+expensive on RISC-V.</li>
+</ul>
+<p>We didn&#x27;t want the list to become too large, so we decided to limit it
+to this set. We put less thought into the Linux configurations, as
+things tend to be a bit more normal in larger systems. Here we just
+decided to support four library configurations: the Cartesian product of
+32&#x2F;64 bit and soft&#x2F;hard float.</p>
+<h4 id="changing-the-multilib-sets">Changing the Multilib Sets</h2>
+<p>While we tried to ensure that a reasonable set of libraries are built as
+part of the default toolchain build, you might want something slightly
+different. You have a few options here:</p>
+<ul>
+<li>Build a non-multilib toolchain so everything will have your ISA&#x2F;ABI
+combination. This is the easiest option, but if you&#x27;re shipping
+something you should at least run the GCC test suite against your
+combination of choice as targets outside the default multilib set get
+less testing.</li>
+<li>Petition the GCC developers to add a <code>MULTILIB_MATCHES</code> that provides
+a library compiled with a slightly different set of flags for the ISA
+you&#x27;re interested in. This is ideal if your desired ISA doesn&#x27;t get
+used much in the C library: for example, a good candidate for
+addition might be to make <code>-march=rv64imafdc -mabi=lp64</code> match with
+the <code>rv64imac&#x2F;lp64</code> libraries, as newlib doesn&#x27;t do much
+floating-point stuff. This is low overhead, so we&#x27;ll probably accept
+your suggestion.</li>
+<li>Petition the GCC developers to add a <code>MULTLIB_REQUIRED</code> that provides
+your desired ISA&#x2F;ABI combination. This is higher overhead than adding
+to <code>MULTLIB_MATCHES</code>, as it results in a higher support burden. If
+there&#x27;s commonly used silicon available for a ISA then we&#x27;ll strongly
+consider adding it to the default set, as the whole point of multilib
+is to avoid the need for multiple toolchains.</li>
+<li>Fork the toolchain and change the default multilib set. This isn&#x27;t a
+desired option, and we request if you do then you pick a different
+tuple to indicate you have a non-standard build. For example, you
+might pick <code>riscv64-my_company-elf</code> instead of <code>riscv64-unknown-elf</code>
+to indicate that &quot;My Company&quot; is providing a non-standard toolchain.
+As the <code>unknown</code> field isn&#x27;t really defined, no program should be
+looking at it so you should be safe. We&#x27;d really like to avoid
+toolchain forks if possible, so please at least contact us to talk
+first!</li>
+</ul>
+<p>I think that&#x27;s about all there is to the RISC-V multilib implementation,
+so hopefully there won&#x27;t be any more coverage on it in this blog series.
+We&#x27;ll try to get back to covering slightly more interesting topics next
+week :).</p>
+
+    
+    <h2> <a href="blog/20171009-linux-1-boot.html">October 09, 2017: Booting a RISC-V Linux Kernel </a> </h2>
+    <p>This post begins a short detour into Linux land, during which we&#x27;ll be
+discussing the RISC-V Linux kernel port. SiFive has recently accounced
+the <a href="https://www.sifive.com/products/coreplex-risc-v-ip/u54-mc/">U54-MC Linux-capable coreplex</a>, and our Linux port was recently
+submitted to linux-next, Linux&#x27;s staging branch, so assuming that
+everything goes smoothly we should be merged at the end of the next
+merge window. Along with Linux we should soon have the full suite of
+core system components upstream, both for embedded systems (via
+binutils, GCC, and newlib) and larger (via binutils, GCC, glibc, and
+Linux).</p>
+<p>This blog series will discus the Linux port as it currently stands,
+which will naturally discuss various aspects of the RISC-V supervisor
+spec. The hope is that this series will be useful for people interested
+in hacking on the RISC-V Linux kernel port as well as people porting
+other operating systems so they can see some of the design decisions we
+made.</p>
+<h4 id="-bbl---the-berkeley-boot-loader"><code>bbl</code>, the Berkeley Boot Loader</h2>
+<p>The standard RISC-V privilege model contains four modes:</p>
+<ul>
+<li>User mode is where userspace programs run. This is specified by Part I
+of the RISC-V ISA manual (the user specification), while all the lower
+modes are specified by Part II (the supervisor specification).</li>
+<li>Supervisor mode is where Linux runs.</li>
+<li>Hypervisor mode is currently left unspecified.</li>
+<li>Machine mode is the lowest protection mode, and is meant to run the
+machine-specific firmware that may be microcode on other machines.</li>
+</ul>
+<p>One of the overarching goals of the RISC-V supervisor specification is
+to allow a single kernel image to run on any RISC-V platform. In order
+to avoid baking assumptions about the hardware into the Linux image, we
+rely on two abstraction mechanisms:</p>
+<ul>
+<li>The details of the underlying hardware are described by a device tree,
+the standard format for describing machines that&#x27;s used by most modern
+systems. This specifies the memory map, the configuration of all the
+harts in the system, and how all the statically allocated devices are
+attached.</li>
+<li>The implementation of complicated functionality that would usually be
+implemented as microcode traps is hidden behind the supervisor binary
+interface, also known as the SBI. This allows supervisors like Linux
+to be written to an interface provided by a lower level of the
+privilege stack without the hardware complexity of adding a bunch of
+emulation instructions.</li>
+</ul>
+<p>In our RISC-V supervisor-mode implementation, which as far as I know is
+by far the most widely used one, both the device tree and the SBI are
+provided by a machine-mode shim known as the Berkeley Boot Loader (or
+<code>bbl</code>). This is meant to be the first stage of the bootloader that a
+user might reasonably want to replace, and maps to something like the
+BIOS or EFI on a PC-style system &ndash; there are ports of both UEFI and
+LinuxBIOS to RISC-V, but I know very little about them so I&#x27;ll restrict
+myself to <code>bbl</code>.</p>
+<p><code>bbl</code> is expected to have been chain loaded from another boot loader,
+with the entry point running in machine mode. It is passed a device tree
+from the prior boot loader stage, and performs the following steps:</p>
+<ul>
+<li>One hart is selected to be the main hart. The other harts are put to
+sleep until <code>bbl</code> is ready to transfer control to Linux, at which
+point they will all be woken up and enter Linux around the same time.</li>
+<li>The device tree that was passed in from the previous stage is read and
+filtered. This allows <code>bbl</code> to strip out information that Linux
+shouldn&#x27;t be interested in. For example, on SiFive systems we tend to
+have an extra utility hart that handles various low-level tasks like
+power management. On our current systems this hart is implemented as a
+very small core that lacks floating point, caches and virtual memory.
+In order to avoid adding a bunch of SiFive-specific logic to Linux,
+we instead just strip out the harts that Linux can&#x27;t boot.</li>
+<li>All the other harts are woken up so they can setup their PMPs, trap
+handlers and enter supervisor mode.</li>
+<li>The <code>mhartid</code> CSR is read so Linux can be passed a unique per-hart
+identifier.</li>
+<li>A PMP is set up to allow supervisor mode to access all of memory.</li>
+<li>Machine mode trap handlers, including a machine mode stack, is set up.
+<code>bbl</code>&#x27;s machine mode code needs to handle both unimplemented
+instructions and machine-mode interrupts.</li>
+<li>The processor executes a <code>mret</code> to jump from machine mode to
+supervisor mode.</li>
+<li><code>bbl</code> jumps to the start of its payload, which in this case is Linux.</li>
+</ul>
+<h4 id="early-boot-in-linux">Early Boot in Linux</h2>
+<p>When Linux boots, it expects the system to be in the following state:</p>
+<ul>
+<li><code>a0</code> contains a unique per-hart id. We currently map these to Linux
+CPU IDs, so they&#x27;re expected to be contiguous and close to 0.</li>
+<li> <code>a1</code> contains a pointer to the device tree, represented as a binary
+ flattened device tree (DTB).</li>
+<li>Memory is identity mapped, which <code>bbl</code> accomplishes by not enabling
+paging.</li>
+<li>The kernel&#x27;s ELF image has been loaded correctly, with all the various
+segments at their correct addresses. This isn&#x27;t particularly onerous
+for Linux, as it has a simple ELF image to load.</li>
+</ul>
+<p>The first thing Linux needs to do when it boots is handle an impedance
+mismatch between the RISC-V specification and what Linux expects: RISC-V
+systems boot harts in an arbitrary order and at arbitrary times, while
+Linux expects a single hart to boot first and then wake up all other
+harts. We handle this with the &quot;hart lottery,&quot; which is a very short
+AMO-based sequence that picks the first hart to boot. The rest of the
+harts spin, waiting for Linux to boot far enough along that they can
+continue.</p>
+<p>At this point we proceed with a fairly standard Linux early boot
+process:</p>
+<ul>
+<li>A linear mapping of all physical memory is set up, with <code>PAGE_OFFSET</code>
+as the offset.</li>
+<li>Paging is enabled.</li>
+<li>The C runtime is set up, which includes the stack and global pointers.</li>
+<li>A spin-only trap vector is set up that catches any errors early in the
+boot process.</li>
+<li><code>start_kernel</code> is called to enter the standard Linux boot process.</li>
+</ul>
+<p>That concludes the entire assembly early boot section of our port &ndash; by
+my count, only 71 instructions! We&#x27;re pretty proud of how little
+assembly we have in our port, it serves as a testament to the simplicity
+of the supervisor ISA specification.</p>
+<h4 id="-setup-arch-"><code>setup_arch</code></h2>
+<p>The normal Linux early boot process proceeds until we reach
+<code>setup_arch</code>, which is the arch-specific setup code that&#x27;s fairly early
+in the kernel boot process. On RISC-V systems, <code>setup_arch</code> proceeds to
+perform the following operations:</p>
+<ul>
+<li>Enable the <code>EARLY_PRINTK</code> console, if the SBI console driver is
+enabled. On RISC-V we unconditionally enable early printk because the
+SBI console is well behaved so there is no reason not to enable it. As
+this happens extremely early in the boot process, you get debugging
+output pretty much the whole time.</li>
+<li>The kernel command line is parsed, and the early arch-specific options
+are dealt with. Here we only bother allowing the user to control the
+amount of physical memory actually used by Linux.</li>
+<li>The device tree&#x27;s memory map is parsed in order to find the kernel
+image&#x27;s memory block, which is marked as reserved. The rest of the
+device tree&#x27;s memory is released to the kernel for allocation.</li>
+<li>The memory management subsystem is initialized, including the zero
+page and various zones. We only support <code>ZONE_NORMAL</code>, so this is
+quite simple.</li>
+<li>Any other hart in the system is woken up.</li>
+<li>The processor&#x27;s ISA is read from the device tree, which is used to
+fill out the <code>HWCAP</code> field in the ELF auxvec. This allows userspace
+programs to determine what the hardware they&#x27;re executing on looks
+like. For now we assume a homogeneous ISA, as anything else doesn&#x27;t
+really map into the UNIX model of processes.</li>
+</ul>
+<p>This is the only RISC-V specific part of the boot process, after this
+control returns back to the upstream kernel code.</p>
+<h4 id="booting-other-harts-in-an-smp-system">Booting other Harts in an SMP System</h2>
+<p>The most interesting part of the RISC-V boot process is how we wake up
+other harts in the system. Recall that, on RISC-V systems, harts boot by
+jumping to the kernel&#x27;s start address at arbitrary times. We do this to
+simplify the specification of the ISA: if there&#x27;s no concept of a hart
+that&#x27;s disabled, then there is no need to specify how to power on or off
+harts. Since power management is frequently a tricky thing to handle,
+we push this off to machine-specific code and provide a clean interface
+to the supervisor.</p>
+<p>In order to handle this wrinkle, the harts that lose the lottery spin
+waiting for the main hart to make it far enough along the boot process
+that they&#x27;ve been allocated the memory they need to run &ndash; in this case,
+a <code>task_struct</code> that lives in the kernel&#x27;s <code>tp</code> variable (a bit of an
+abuse of the thread pointer, but we just want something the compiler
+won&#x27;t mangle) and a stack.</p>
+<p>The code to do this is fairly straightforward, even if it is a sizeable
+chunk of the assembly code in our startup function:</p>
+<pre><code>.Lsecondary_start:
+        li a1, CONFIG_NR_CPUS
+        bgeu a0, a1, .Lsecondary_park
+
+        &#x2F;* Set trap vector to spin forever to help debug *&#x2F;
+        la a3, .Lsecondary_park
+        csrw stvec, a3
+
+        slli a3, a0, LGREG
+        la a1, __cpu_up_stack_pointer
+        la a2, __cpu_up_task_pointer
+        add a1, a3, a1
+        add a2, a3, a2</code></pre>
+<p>            &#x2F;<em>
+<br /></em> This hart didn&#x27;t win the lottery, so we wait for the winning hart to
+             <em> get far enough along the boot process that it should continue.
+<br /></em>&#x2F;
+    .Lwait<em>for</em>cpu<em>up:
+            REG</em>L sp, (a1)
+            REG<em>L tp, (a2)
+            beqz sp, .Lwait</em>for<em>cpu</em>up
+            beqz tp, .Lwait<em>for</em>cpu<em>up
+            fence
+<br />
+            &#x2F;<em> Enable virtual memory and relocate to virtual address </em>&#x2F;
+            call relocate
+<br />
+            tail smp</em>callin</p>
+<p>This leaves the <code>__cpu_up</code> function, which boots a target hard by ID,
+also to be fairly simple:</p>
+<pre><code>int __cpu_up(unsigned int cpu, struct task_struct *tidle)
+{
+        tidle-&gt;thread_info.cpu = cpu;
+
+        &#x2F;*
+         * On RISC-V systems, all harts boot on their own accord.  Our _start
+         * selects the first hart to boot the kernel and causes the remainder
+         * of the harts to spin in a loop waiting for their stack pointer to be
+         * setup by that main hart. Writing __cpu_up_stack_pointer signals to
+         * the spinning harts that they can continue the boot process.
+         *&#x2F;
+        smp_mb();
+        __cpu_up_stack_pointer[cpu] = task_stack_page(tidle) + THREAD_SIZE;
+        __cpu_up_task_pointer[cpu] = tidle;
+
+        while (!cpu_online(cpu))
+                cpu_relax();
+
+        return 0;
+}</code></pre>
+<h4 id="shutting-down">Shutting Down</h2>
+<p>It seems most natural to discuss the shutdown process along with the
+boot process, but the process is actually very simple on RISC-V: the
+generic kernel code cleans up the whole kernel, at which
+point <code>sbi_shutdown</code> is called to inform the machine-mode code that it
+should terminate.</p>
+<p>That&#x27;s about all that&#x27;s involved in booting (and halting) a RISC-V Linux
+kernel. Since we use device tree and push most of the platform-specific
+work into the firmware, the process is actually pretty straightforward.</p>
+<p>Next week we&#x27;ll discuss task switching, which is the first thing the
+kernel does after the boot process completes.</p>
+
+    
+    <h2> <a href="blog/20171023-linux-2-tasks.html">October 23, 2017: Entering and Exiting the Linux Kernel on RISC-V </a> </h2>
+    <p>Continuing our journey into the RISC-V Linux kernel port, this week
+we&#x27;ll discuss context switching. Context switching is one of the more
+important parts of an architecture port: it is all but impossible to
+completely abstract away the details of entering and exiting the kernel,
+Since this is on many critical paths (system calls and scheduling) it
+must go fast, but since it&#x27;s the one line of protection the kernel has
+from userspace it must also be secure.</p>
+<h4 id="traps-on-risc-v-systems">Traps on RISC-V Systems</h2>
+<p>One of the more interesting things about the RISC-V ISA is that there is
+very little that happens when taking an interrupt or exception. In
+addition to making the ISA simple to implement, this has the advantage
+of allowing software to have a clean slate on top of which to implement
+context switching.</p>
+<p>The RISC-V supervisor specification defines a single kernel trap entry
+point, which can be set by writing the <code>stvec</code> CSR. The only way to
+transfer control to the kernel is via this entry point, and the only
+side effects of taking a trap are to change the PC, the exception PC and
+exception cause CSRs,  and the privilege mode. The supervisor software
+is expected to provide a transparent implementation of the userspace
+ABI.</p>
+<p>Just like entering the kernel via a single trap entry point, the only
+way to leave the kernel is by executing the <code>sret</code> instruction. This
+mirrors taking a trap: all that happens is the privilege mode is changed
+and the PC is reset to the exception PC CSR&#x27;s value. Again, the
+supervisor software is expected to provide a transparent implementation
+of the userspace ABI.</p>
+<p>The one additional bit of support for supervisor mode trap handling that
+exists in the RISC-V ISA is the <code>sscratch</code> CSR. This CSR provides a
+single XLEN-sized save region that has no implicit behavior and thus is
+entirely used at the supervisor&#x27;s discretion. All our software context
+switching implementations use this register to store a pointer to a
+memory region that contains whatever extra information is actually
+required to make the context switch, essentially just pushing the entire
+context switching implementation into software.</p>
+<h5 id="trap-delegation">Trap Delegation</h3>
+<p>The RISC-V ISA defines that all traps are handled by machine mode by
+default, with the option to delegate traps in some privilege levels by
+directly handling them in their respective privilege level. The
+supervisor mode software is oblivious to the mechanism used to enter its
+trap handler, it simply assumes that the relevant traps eventually make
+it to supervisor mode.</p>
+<p>Machine mode software is expected to either filter traps in hardware or
+software. For example, if the machine mode implementation has emulation
+routines for some unsupported instructions, it would have to handle the
+illegal instruction trap in software but could delegate the remaining
+traps via the hardware mechanism.</p>
+<p>The trap delegation mechanism allows high performance traps by
+delegating them directly to supervisor mode in hardware while still
+allowing the flexibility of handling any trap in a lower privilege mode.
+This allows for a simple implementation of virtual machines while still
+allowing for high performance on implementations that don&#x27;t utilize
+virtualisation.</p>
+<h5 id="--handle-exception----the-trap-entry-point"><code>handle_exception</code>, the Trap Entry Point</h3>
+<p>Since most of the interesting aspects of context switching on RISC-V
+systems are handled by the supervisor mode software, the hardware enters
+the kernel at one single trap entry point and then the supervisor-mode
+software determines how to handle the trap. There are two categories of
+traps defined by the RISC-V ISA:</p>
+<ul>
+<li>Interrupts, which are asynchronous. RISC-V defines a software
+interrupt, a timer interrupt, and an external interrupt.</li>
+<li>Exceptions, which are synchronous. RISC-V defines exceptions to
+handle instruction, load, store, and AMO access faults; environment
+calls (used for system calls on Linux); illegal instructions; and
+breakpoints.</li>
+</ul>
+<p>The trap type is determined by the <code>scause</code> CSR upon entry to the trap
+handler. After saving the integer registers to the kernel stack, which
+can be looked up via <code>sscratch</code>, we examine the trap cause and determine
+how to handle the trap. RISC-V delineates interrupts by setting the
+high bit in <code>scause</code>, which makes it easy to filter those out and handle
+them. As most exceptions result from userspace emitting an <code>scall</code>
+instruction to begin a system call, we then check for that condition and
+handle the system call using Linux&#x27;s generic system call handling
+infrastructure. The remainder of the exceptions and handled via a jump
+table, each having a fairly straight-forward implementation that passes
+control back to the kernel&#x27;s relevant generic exception handling
+routine.</p>
+<h5 id="isa-defined-interrupts">ISA-Defined Interrupts</h3>
+<p>All the exception-type traps are very simple to handle on RISC-V because
+we essentially just pass control directly back to the relevant generic
+Linux routine. Interrupts are, however, a different story: as far as I
+can tell, there isn&#x27;t any generic infrastructure to handle the first
+level of interrupt muxing we have on RISC-V so at least for the time
+being we have our own mechanism. What we have now is a bit messy, so
+while I&#x27;m going to describe what&#x27;s going on here it&#x27;s all in flux and
+may have changed by the time you read this blog entry.</p>
+<p>The best way to describe why this is messy is to walk through the timer
+interrupt as an example:</p>
+<ul>
+<li>The SEE implementation determines a timer interrupt has occurred and
+enters the supervisor&#x27;s trap handler with <code>scause</code> set accordingly,
+which in Linux is <code>handle_exception</code>.</li>
+<li>Linux determines this is an interrupt by looking at a bit in <code>scause</code>
+and then calls <code>do_IRQ</code> to handle the interrupt.</li>
+<li><code>do_IRQ</code> calls in to the RISC-V interrupt controller driver&#x27;s
+interrupt handling function, <code>riscv_intc_irq</code>. This is the first bit
+of messiness: our core arch port is tied to one of our drivers via a
+RISC-V specific API, which is generally a bad idea.</li>
+<li><code>riscv_intc_irq</code> determines this is a timer interrupt, which then
+calls back into the core RISC-V arch port to handle the timer
+interrupt via <code>riscv_timer_interrupt</code>. This is another RISC-V specific
+API, but this one is a bit less scary because the dependency is
+from the driver to the arch port, which will be hard to avoid.</li>
+<li><code>riscv_timer_interrupt</code> looks into the RISC-V timer driver&#x27;s percpu
+data structure to find the relevant <code>struct clock_event_device</code>, which
+it then call to handle the timer interrupt. This is yet another
+dependency from our arch port into a driver, which is also a bad idea.</li>
+</ul>
+<p>Intertwining our arch port with our drivers is generally a bad idea.
+While we used to have our drivers much more tightly ingrained with our
+arch port and are in the process of cleaning this up, there&#x27;s still a
+bit more work to do in order to get this all sane.</p>
+<h5 id="the-plic">The PLIC</h3>
+<p>In stark contrast to how our first-level interrupt handling flow works,
+the PLIC driver has a fairly clean interrupt handling flow. Registering
+the PLIC driver is handled entirely via standard device tree mechanisms,
+and handling interrupts doesn&#x27;t touch any core RISC-V code.</p>
+<p><code>plic_init</code>, the PLIC driver initialization function, hooks into Linux&#x27;s
+<code>irqchip</code> device tree infrastructure so it can be called when a PLIC
+exists in the device tree. The PLIC interrupt mappings are also
+specified by the device tree, so in order to register the various
+interrupt handlers all the PLIC driver needs to do is hook into Linux&#x27;s
+generic IRQ registration subsystem to link a PLIC interrupt to whatever
+device driver it should trigger.</p>
+<p>The actual PLIC interrupt handling flow is fairly simple: since the PLIC
+is designed with modern multi-core interrupt handling flows in mind,
+there aren&#x27;t a whole lot of hoops we need to jump through in order to
+handle an interrupt. The general PLIC interrupt handling flow is as
+follows:</p>
+<ul>
+<li>A given (hart context, interrupt id) pair is enabled. In the current
+Linux driver we simply support globally enabling interrupts for the
+time being, but the PLIC is designed to allow per-hart interrupt
+routing at some point in the future.</li>
+<li>While the PLIC hardware allows for priorities and thresholds, we
+currently don&#x27;t support these in the Linux driver. Thus we simply
+configure the threshold to allow all interrupts in and enable or
+disable them upon request.</li>
+<li>Once interrupts are enabled and the device eventually triggers an
+interrupt, the PLIC will pick one hart context (where the triggered
+interrupt is enabled and over the context&#x27;s threshold) to interrupt by
+raising the local interrupt controller&#x27;s external interrupt line, thus
+causing control to enter the kernel&#x27;s trap entry point and eventually
+filter to the interrupt handling routine that the PLIC driver
+registered.</li>
+<li>As is common in many interrupt handling flows, the external interrupt
+raised by the PLIC simply means &quot;there may be an arbitrary amount of
+work to do, you should go check now&quot;. When handling PLIC interrupts,
+this triggers an interrupt handling loop that has three phases.
+  <em> First the driver polls this hart&#x27;s interrupt claim register via
+    the <code>plic_claim</code> function. This memory mapped read serves as a
+    synchronization point: it both informs software of a pending
+    interrupt that should be handled (with the sentinal value of 0
+    reserved to terminate the handling loop) and allows the PLIC
+    hardware to ensure that an interrupt is processed by only a single
+    hart context.
+<br /></em> The PLIC driver then maps the PLIC&#x27;s IRQ number to the
+    cooresponding Linux interrupt handler (via Linux&#x27;s generic IRQ
+    subsystem) and then allows Linux to handle the interrupt.
+  * To finish an interrupt, the PLIC driver then informs the PLIC
+    hardware that it&#x27;s done handling the interrupt via the
+    <code>plic_complete</code> function, which writes the interrupt ID back to
+    the claim register. This re-enables the interrupt in the PLIC,
+    allow it to be handled again.</li>
+<li>The PLIC driver continues handling interrupts as long as there are
+pending interrupts returned by <code>plic_claim</code>, which allows multiple
+interrupts to be handled without introducing additional context
+switches.</li>
+<li>Once the PLIC driver determines that there are no more pending
+interrupts, it informs the generic IRQ handling subsystem that it&#x27;s
+done handling interrupts for now and then returns.</li>
+</ul>
+<p>The PLIC driver as it currently stands is in pretty decent shape, but
+there are a handful of small cleanups that could be performed:</p>
+<ul>
+<li>The PLIC assumes that the interrupt source IDs can be registered
+globally in Linux, which may conflict with other interrupt controllers
+in the system. Right now we only have the local interrupt controller,
+which doesn&#x27;t register with the generic IRQ handling subsystem, so
+this may change.</li>
+<li>The PLIC hardware supports AMOs and is designed to have an efficient
+software implementation that uses AMOs to enable and disable
+interrupts. Since we currently can&#x27;t query PMAs on RISC-V systems to
+ensure that Linux can actually use AMOs to talk to the PLIC, we don&#x27;t
+take advantage of this in the PLIC driver right now.</li>
+<li>The PLIC uses the simple IRQ handling flow, but it may map better to
+the FastEOI flow. This would allow us to clean up the PLIC driver&#x27;s
+implementation by hoisting the interrupt polling loop out of RISC-V
+specific code and use the generic version instead.</li>
+</ul>
+<p>Hopefully we&#x27;ll have some of these issues resolved by the time the PLIC
+driver is upstream, but as many of the issues are fairly minor we might
+take a bit to clean everything up.</p>
+<h5 id="saving-and-restoring-extension-state">Saving and Restoring Extension State</h3>
+<p>RISC-V was designed to be an extensible ISA, and as a result it has
+multiple extensions. Linux is largely oblivious to these extensions: it
+mandates the A extension and will probably run on systems with the M and
+C extensions, but as those extensions don&#x27;t have any extra state these
+are easy things to handle.</p>
+<p>The only current extension defined by the RISC-V standard that adds to
+the user-visible state are the F and D extensions, which add floating
+point registers. The RISC-V floating point extensions follow the
+standard pattern: Linux is able to mark the register state as &quot;trap on
+access&quot; so it can lazily save and restote the F register state. This has
+one major advantage: since the F register state will never be dirty on
+systems without F registers, we don&#x27;t need any explicit code in the
+Linux kernel to distinguish between systems with or without the F
+extension.</p>
+<h5 id="returning-to-userspace">Returning to Userspace</h3>
+<p>Returning to userspace on RISC-V systems is fairly straight-forward:
+since the hardware does very little on a context switch, we just reverse
+everything that happened when entering the kernel and issue a <code>sret</code>
+instruction to get back to userspace.</p>
+<p>There are a handful of Linux-specific things we need to do before
+returning to userspace:</p>
+<ul>
+<li>If we&#x27;re returning from a system call, we need to check to see if
+syscall tracing is enabled. This allows the ptrace interface to work,
+which is the kernel interface used by programs like GDB and strace.</li>
+<li>Before returning to userspace in any manner, we heck to see if there&#x27;s
+other work that should be done before entering userspace, invoking
+either some signal handlers or the scheduler as necessary.</li>
+<li><code>tp</code> is swapped with <code>sscratch</code>, so the kernel can find its internal
+data structures again when it is re-entered.</li>
+<li>Restore userspace&#x27;s copies of the integer register state and jump back
+to userspace.</li>
+</ul>
+<h4 id="signal-handling">Signal Handling</h2>
+<p>Since signal handling is one of the more complicated aspects of Linux,
+we try to avoid deviating too much from the standard asm-generic
+mechanisms. The RISC-V signal handling infrastructure is primarily
+based around passing a <code>struct sigcontext</code> to userspace, which contains
+the user&#x27;s architectural state at the time of the exception (as saved by
+the kernel), to the signal handler function registered by userspace.</p>
+<p>Userspace&#x27;s signal handler function has the same ABI as a regular
+function. This makes it easy to enter the signal handler: we simply
+modify <code>sepc</code> to contain the address of the signal handler and then
+return to userspace via the normal mechanisms. Signal handlers are
+expected to call <code>sigreturn</code> when they are done, so in order to maintain
+the regular function ABI we set the return link to a VDSO-based
+trampoline function that does so.</p>
+<p>Since <code>struct sigcontext</code> contains a copy of all the user-visible
+architecture-defined state at the time the signal to be handled was
+taken, this needs to be extensible in order to allow for future RISC-V
+ISA extensions to cleanly integrate with applications that need to
+interrogate these contexts. In order to enable these applications we
+have defined an extensible format for <code>struct sigcontext</code> that allows
+these future extensions to be made visible to userspace. We currently
+only support the F and D extensions, but we&#x27;ve designed this with the
+eventual V extension in mind as well.</p>
+<p>Stay tuned for next week, where we&#x27;ll talk about how the RISC-V kernel
+port handles memory management.</p>
+
+    
+    <h2> <a href="blog/20171204-linux_upstream.html">December 04, 2017: The RISC-V Linux Port is Upstream! </a> </h2>
+    <p>As some of you may have heard, the RISC-V Linux port has been accepted
+into Linus&#x27; tree and is slated to release as part of 4.15. While this
+is a major milestone, we&#x27;re far from done in Linux kernel land and
+there&#x27;s a whole lot of work left to be done in userspace.</p>
+<p>That said, this is a big enough development that it warrants a blog post
+of its own &ndash; at the least as an excuse for why I haven&#x27;t been blogging
+for a bit :).</p>
+<h4 id="what-is-upstream-">What is Upstream?</h2>
+<p>The core of our port has landed upstream.  That includes:</p>
+<ul>
+<li>Device Tree bindings for RISC-V CPUs.</li>
+<li>Early boot and initialization code.</li>
+<li>The Linux atomic and memory model intrinsics, targeted at a non-formal
+memory model (aka, a bunch of guesses I&#x27;ve made).</li>
+<li>Some interrupt and timer infrastructure, but this needs to be cleaned
+up.</li>
+<li>Paging and MMU related code.</li>
+<li>An implementation of the user-facing ABIs for RISC-V Linux systems,
+which will be turned into a specification.</li>
+</ul>
+<p>All this code, in addition to a handful of fixups, will be included in
+the 4.15 tarball release. We&#x27;re targeting the next glibc release, which
+should be out in early February. At that point, the ABIs will be set in
+stone and distributions will be able to begin work while maintaining
+binary forever.</p>
+<h4 id="what-isn-t-upstream-">What isn&#x27;t Upstream?</h2>
+<p>We&#x27;re still missing quite a few features, most notably:</p>
+<ul>
+<li>We need to clean up first-level interrupt handling on RISC-V systems,
+which I will probably borrow from how ARMv8 and OpenRISC are doing it.</li>
+<li>The SBI console driver isn&#x27;t upstream yet, but it appears to be in
+pretty good shape.</li>
+<li>The per-hart interrupt controller will need to be modified to work
+with the new interrupt handling scheme.</li>
+<li>The PLIC driver should be converted to the FastEOI flow, but I&#x27;ve yet
+to finish that refactoring.</li>
+<li>The ISA mandated timer driver needs to be converted to avoid
+initialization code in <code>arch&#x2F;riscv&#x2F;</code>, to handle more of the device
+tree specification, and to use the new interrupt handling
+infrastructure.</li>
+<li>Our 32-bit DMA patches need to be cleanup up and submitted for review.</li>
+<li>We have some workarounds for bugs in the Xilinx PCIe controller that
+need to be fixed sanely .</li>
+<li>There&#x27;s a handful of cleanups floating around in PCI and OF land that
+need to eventually make it in.  Some of these were also being worked
+on in better ways by upstream, so hopefully that sorts itself out.</li>
+<li>We have a handful of device tree documentation fixes that should go
+in.</li>
+</ul>
+<h4 id="how-to-help">How to Help</h2>
+<p>If you&#x27;re interested in helping with the RISC-V Linux effort (or any
+other RISC-V software project), the best place to get started is on our
+<a href="http://github.com/riscv/">GitHub</a> page. Each project has its own
+development repository on GitHub that contains various outstanding
+patches, and the RISC-V maintainers of those projects are active on
+those GitHub pages to discuss development.</p>
+<p>If you&#x27;re already familiar with the development process for a particular
+project, then we of course follow the standard development practices on
+a per-project basis for all the ports that have landed upstream. In
+general, a <code>MAINTAINERS</code> file of some sort will contain the mechanism
+for contacting the RISC-V developers. There is also a
+<code>patches@groups.riscv.org</code> mailing list where all patches for upstream
+RISC-V software are meant to be CC&#x27;d &ndash; this is mainly meant for
+distribution maintainers as an easy place to find all software patches,
+but also serves as a place for discussion.</p>
+<p>Additionally, for questions that don&#x27;t fit into any of the above bins
+you&#x27;re welcome to send them to the RISC-V software mailing list,
+<code>sw-dev@groups.riscv.org</code> or ask on <code>#riscv</code> on freenode.</p>
+
+    
+    <h2> <a href="blog/20171211-linux-3-priv.html">December 11, 2017: Paging and the MMU in the RISC-V Linux Kernel </a> </h2>
+    <p>This entry will cover the RISC-V port of Linux&#x27;s memory management
+subsystem. Since the vast majority of the memory management code in
+Linux is architecture-independent, the vast majority of our memory
+management code handles interfacing with our MMU, defining our page
+table format, and interfacing with drivers that have memory allocation
+constraints.</p>
+<p>I will refrain from discussing the RISC-V memory model in this blog,
+both because it isn&#x27;t yet finished and because it&#x27;s complicated enough
+to warrant its own series of blog posts.</p>
+<p>Also, as a side note: for those of you not following the internet, we&#x27;ve
+gotten our core architecture port into Linus&#x27; tree and are slated to
+release as part of 4.15.  This won&#x27;t be a fully bootable RISC-V system,
+but it&#x27;s at least a good first step!</p>
+<h4 id="privilege-levels-in-risc-v-systems">Privilege Levels in RISC-V Systems</h2>
+<p>The RISC-V ISA defines a stack of execution environments. While each
+environment is designed to be classically virtualizable, in standard
+systems each level in the stack is designed to provide the next level&#x27;s
+execution environment. Starting from the least-privileged level in the
+stack, the execution environments are:</p>
+<ul>
+<li>User-mode software executes in an AEE (Application Execution
+Environment). On Linux systems, the AEE is also known as the user
+ABI: the set of system calls supported by the kernel. The AEE also
+includes the entire user ISA, since user-mode programs are expected to
+be able to execute instructions other than just <code>scall</code>.</li>
+<li>Supervisor-mode software executes in an SEE (Supervisor Execution
+Environment). This environment consists of the supervisor-mode
+instructions and CSRs defined by the privileged ISA document, along
+with the SBI. Supervisor-mode software is expected to provide
+multiple AEEs, Linux provides one AEE to each process.</li>
+<li>Hypervisor-mode software executes in an HEE (Hypervisor Execution
+Environment), and is expected to provide multiple SEEs. The
+hypervisor-mode section of the privileged ISA document is still being
+written, so we&#x27;ll ignore this for now.</li>
+<li>Machine-mode software executes in an MEE (Machine Execution
+Environment), and is expected to provide one higher-level execution
+context. Since the privileged mode ISA makes implementing the U, S,
+and H extensions optional (thus allowing for M, M+U, M+S+U, and
+M+H+S+U systems), it&#x27;s expected that different machine-mode software
+implementation will provide either an HEE, SEE, or AEE.</li>
+</ul>
+<p>While it&#x27;s fairly standard to provide execution environment stacks that
+do not match this hierarchy, the software executing in each environment
+can&#x27;t tell the difference. That&#x27;s not to say that user-mode software is
+entirely portable: for example, the Linux AEE is different than the
+FreeBSD AEE because they provide different system calls. The intent is
+simply that programs written to execute in the Linux AEE can&#x27;t tell if
+they&#x27;re executing on Linux on hardware, in Linux running in Spike, or in
+QEMU&#x27;s user-mode emulation. None of this is a new concept, it&#x27;s just a
+bit more explicitly stated in the RISC-V ISA specification than it is on
+many other architectures.</p>
+<p>Since RISC-V is classically virtualizable at every level of the privilege
+stack, no explicit hardware support is necessary to provide any
+execution environment: for example, QEMU&#x27;s user-mode emulation provides
+an AEE on systems that have no hardware support for any RISC-V ISA.
+While these systems can be made reasonably performant, the main purpose
+of RISC-V is to enable hardware implementations of the ISA &ndash; for
+example, even though a Xeon running QEMU will probably be the fastest
+implementation of the RISC-V Linux AEE for the foreseeable future it
+would be more appropriate to run a hardware implementation of RISC-V on
+my wristwatch.</p>
+<p>The RISC-V ISA documents are designed to allow the software
+implementations at various levels of the privilege stack to use the
+execution environment they&#x27;re written against in order to provide the
+execution environment above them. Some of these are so obvious you
+probably haven&#x27;t noticed that we&#x27;ve been talking about them for a while:
+for example, it&#x27;s assumed that the hardware handles executing an <code>addi</code>
+instruction in userspace without the kernel&#x27;s intervention because it
+would be silly not to.</p>
+<p>We&#x27;ve been able to put off the discussion of privileged levels until now
+because the vast majority of the design is obvious: all of the user
+instructions are handled by the hardware without supervisor intervention
+except for <code>scall</code>, which just transfers control to the kernel&#x27;s single
+trap entry point &ndash; see my <a href="all-aboard-part-7-entering-and-exiting-the-linux-kernel-on-risc-v">previous blog post</a> for
+details. Since application execution environments provide the illusion
+that user-space programs have access to a big flat address space we&#x27;ve
+been able to more or less ignore memory when discussing user
+applications. As is common with computing systems, memory is the hard
+part &ndash; thus, we only really need to discuss RISC-V privilege modes when
+talking about paging.</p>
+<p>For this blog post, we&#x27;ll be focusing on supervisor code running on
+reasonable systems &ndash; thus we won&#x27;t do things like emulating unsupported
+instructions from userspace. The focus of the blog will be on how to
+provide a RISC-V application execution environment given a supervisor
+execution environment.</p>
+<h5 id="the-risc-v-application-class-supervisor-execution-environments">The RISC-V Application-Class Supervisor Execution Environments</h3>
+<p>Supervisor programs, like Linux, execute on a supervisor execution
+environment. Much like how the user-level ISA leaves many of the
+specifics of the AEE to be implemented in different ways on different
+platforms (system calls on Linux vs BSD, for example), the privileged
+ISA doesn&#x27;t specify all the details of the SEE that application-class
+supervisors (like Linux or BSD) can expect &ndash; those will be specified as
+part of the platform specification.</p>
+<p>In this blog, I&#x27;ll quickly go over a few key aspects of the RISC-V
+supervisor execution environment for application-class supervisors.
+This environment is designed to support UNIX-style operating systems
+running in supervisor mode, emulating POSIX-compliant application
+execution environments. A highlight of the proposed (with the caveat
+that I&#x27;m not in the platform specification working group, so this is all
+just my guess) requirements of the application-class SEE are:</p>
+<ul>
+<li>Either the RV32I or RV64I base ISAs, along with the M, A, and C
+extensions. The F and D extensions are optional but paired together,
+leaving the possible standard ISAs for application-class SEEs as
+RV32IMAC, RV32IMAFDC (RV32GC), RV64IMAC, and RV64IMAFDC (RV64GC).</li>
+<li>On RV32I-based systems, support for Sv32 page-based virtual memory.</li>
+<li>On RV64I-based systems, support for at least Sv48 page-based virtual
+memory.</li>
+<li>Upon entering the SEE, the PMAs are set such that memory accesses are
+point-to-point strongly ordered between harts and devices.</li>
+<li>An SBI that implements various fences, timers, and a console.</li>
+</ul>
+<p>The application-class SEE, as specified by the upcoming RISC-V platform
+specification, in the contract between standard Linux distributions and
+hardware vendors &ndash; of course these restrictions don&#x27;t apply for the
+embedded space, where many of them would be onerous. In practice: if
+you expect users to be able to swap out the boot media on your platform,
+then you should meet the requirements of the application-class SEE.</p>
+<h5 id="the-risc-v-linux-application-execution-environments">The RISC-V Linux Application Execution Environments</h3>
+<p>Supervisor-mode software on RISC-V uses a supervisor execution
+environment in order to provide one or multiple application execution
+environments. Fundamentally, an AEE (like any execution environment) is
+simply the definition of the next state of the machine upon every
+instruction&#x27;s execution. On RISC-V systems, the AEE depends on:</p>
+<ul>
+<li>The ISA string, which determines what the vast majority of
+instructions do as well as which registers constitute the machine&#x27;s
+current state.</li>
+<li>The supervisor&#x27;s user-visible ABI, which determines what the <code>scall</code>
+instruction does.  This is different than the C compiler&#x27;s ABI, which
+defines the interface between different components of the application.</li>
+<li>The contents of the entire memory address space.</li>
+</ul>
+<p>In an idealized world, each process consists of its own independent AEE,
+with Linux multiplexing these on top of a single SEE.  Of course,
+there&#x27;s all sort of problems to this model in practice, but none of this
+is specific to RISC-V systems.  The concept of a self-contained and well
+defined AEE is still useful from a standards standpoint, and we hope to
+progress on properly specifying the RISC-V Linux AEE family (as well as
+AEEs for other POSIX-like systems) as we progress with our ports.</p>
+<h4 id="paging-on-risc-v-systems">Paging on RISC-V Systems</h2>
+<p>After that lengthy divergence into the definition of RISC-V&#x27;s privileged
+modes, we can finally get to the whole point of this blog post: paging
+on RISC-V systems. Paging is the main mechanism used to provide user
+mode with the illusion of having an AEE &ndash; like most things in computer
+architecture, it turns out that memory is the tricky part.</p>
+<p>One of the nice things about designing an ISA at the time RISC-V was
+designed is that so many different solutions to difficult problems have
+been tried that we pretty much know what to do now.  Thus, we arrived at
+a pretty standard page-based virtual memory system when designing the
+RISC-V&#x27;s supervisor virtual memory interface.  The exact page table
+formats and such are listed in the relevant RISC-V ISA manuals so I
+won&#x27;t go through them here, but there are a few highlights:</p>
+<ul>
+<li>Pages are 4KiB at the leaf node, and it&#x27;s possible to map large
+contiguous regions with every level of the page table.</li>
+<li>RV32I-based systems can have up to 34-bit physical addresses with a
+three level page table.</li>
+<li>RV64I-based systems can have multiple virtual address widths, starting
+with 39-bit and extending up to 64-bit in increments of 9 bits.</li>
+<li>Mappings must be synchronized via the <code>sfence.vma</code> instruction.</li>
+<li>There are bits for global mappings, supervisor-only,
+read&#x2F;write&#x2F;execute, and accessed&#x2F;dirty.</li>
+<li>There is a single valid bit, which allows storing <code>XLEN-1</code> bits of
+flags in an otherwise unused page tables.  Additionally, there are two
+bits of software flags in mapped pages.</li>
+<li>Address space identifiers are 9 bits or RV32I and 16 bits on RV64I,
+and they&#x27;re a hint so a valid implementation is to ignore them.</li>
+<li>The accessed and dirty bits are strongly ordered with respect to
+accesses from the same hart, but are optional (with a trap-based
+mechanism when unsupported).</li>
+</ul>
+<p>The Linux implementation of paging is functional but not complete: we&#x27;re
+missing support for ASIDs, for example.  Like many things in our port,
+these extra features will come with time.</p>
+<h4 id="handling-device-dma">Handling Device DMA</h2>
+<p>RISC-V does not currently define an IOMMU, so device accesses are
+performed in a single linear address space provided by the SEE (aka,
+physical memory).  Combined with the lack of a mechanism to modify PMAs,
+this makes device IO on RISC-V very simple: we essentially just don&#x27;t do
+anything specific to our ISA.</p>
+<h5 id="handling-32-bit-dma-regions">Handling 32-bit DMA Regions</h3>
+<p>Some devices only support 32-bit addressing even when attached to a
+system with longer physical addresses.  Since RISC-V lacks an IOMMU, we
+handle these devices by using kernel bounce buffers.  This is correct
+but slow: while it may be fine for SoC-style systems where the set of
+devices is well known at elaboration time, as more complicated RISC-V
+systems become available we will eventually need to standardize a
+mechanism for virtualizing device addressing.</p>
+<p>Our bounce buffer mechanism simply uses the standard mechanisms provided
+by Linux, so there isn&#x27;t anything RISC-V specific about it.  We provide
+a 32-bit <code>ZONE_DMA</code>, allow allocating from that, and use bounce buffers
+to handle <code>ioremap()</code> for already-allocated pages outside the legal
+region.</p>
+
+    
+    <h2> <a href="blog/20180220-contribute_to_riscv_software.html">February 20, 2018: How to Contribute to the RISC-V Software Ecosystem </a> </h2>
+    <p>We recently announced the <a href="https://www.crowdsupply.com/sifive/hifive-unleashed">HiFive
+Unleashed</a>, a
+development board for Freedom U540-G000, the world&#x27;s first Linux-capable
+RISC-V ASIC. The announcement of this board roughly lined up with the
+first upstream releases of Linux and glibc that contain RISC-V support.
+As a result, our news has driven a lot of interest from the open source
+software community &ndash; that was really the whole point of announcing the
+board in the first place, so in that sense it&#x27;s working out very well.</p>
+<p>This new wave of interest has demonstrated that we don&#x27;t have nearly
+enough information on how RISC-V software development is done.  We&#x27;re
+essentially in the same situation again as to what prompted starting
+this blog, but with a new set of tools: I originally started the blog
+when binutils and GCC landed upstream with descriptions of how those
+ports work for developers who became interested after those ports were
+released. We now have a whole new set of interested developers who found
+our Linux and glibc ports and want to know how to get involved.</p>
+<p>While there are some technical descriptions of how the RISC-V binutils,
+GCC, and Linux ports are structured, there is no description of how our
+development flow works. Since our launch, we maintained out-of-tree RISC-V
+ports for a long time, and it&#x27;s a bit confusing for new developers just
+starting with RISC-V as there are a lot of odd practices we used to use
+while maintaining our out-of-tree ports that we&#x27;re slowly phasing out.
+After getting a handful of emails from people asking how they should
+contribute (including some from SiFive employees :)), I thought it&#x27;d be
+best to describe our development flows.</p>
+<p>Now that we&#x27;re upstream, the development flow is actually very simple:
+you can contribute to the RISC-V port of a project in exactly the same
+way you&#x27;d contribute to any other port of that project.  Thus, if
+you&#x27;re already familiar with how a project&#x27;s development flow works then
+just keep doing what you&#x27;re doing &ndash; we read all the relevant mailing
+lists and bug trackers.It &#x27;s generally best to indicate your patches
+are RISC-V related with a subject that looks something like &quot;[PATCH]
+RISC-V: Fix a bug in...&quot; to make sure your email doesn&#x27;t get lost in the
+flood.</p>
+<p>If you&#x27;re not familiar with upstream development for a project, are
+looking for a more concrete list of things that need to get done, or are
+interested in distributing RISC-V software then feel free to keep
+reading :).</p>
+<h4 id="backports--repositories--branch-names--and-tagged-releases">Backports, Repositories, Branch Names, and Tagged Releases</h2>
+<p>We&#x27;ve been trying to follow the same branching and release scheme in all
+the projects that I maintain, which currently include
+binutils, GCC, glibc and Linux. We have the following branches (using
+binutils for reference, as it&#x27;s the first on the list):</p>
+<ul>
+<li><code>master</code> (or <code>trunk</code>, for SVN-based projects like GCC): The main
+development branch.</li>
+<li><code>riscv-all</code>: The RISC-V integration branch, which is based on the master
+and contains additional patches of any quality level. This branch
+might not be stable or high quality, but if you&#x27;ve found a bug then
+you should look through this branch to see if there&#x27;s an in progress
+patch to fix it to avoid duplicating work.  I don&#x27;t recommend working
+directly off this branch as it is automatically generated and churns a
+lot.</li>
+<li><code>binutils-2_30-branch</code>: The upstream release branch. We backport
+RISC-V patches to this branch when appropriate.  Note that the
+backport criteria tend to be fairly stringent here: the patch must
+have gone through upstream&#x27;s code review, and must be a bug fix. That
+means feature additions and performance improvements generally aren&#x27;t
+appropriate for backport to the upstream release branch.</li>
+<li><code>riscv-binutils-2.30</code>: The RISC-V release branch. This is based on
+the actual release from upstream (as opposed to the release branch,
+which moves) and contains as many RISC-V specific backports as
+possible. This includes backports that aren&#x27;t suitable for upstream,
+such as new features and performance improvements, as long as they&#x27;re
+straightforward to backport to older versions of the package. We
+maintain this branch for one release cycle. If you&#x27;re looking to
+distribute RISC-V software then this is the best place to look: it&#x27;s
+where SiFive&#x27;s binary toolchain releases come from and what ends up
+tagged as stable.</li>
+</ul>
+<p>With all these branches it&#x27;s important to ensure that patches end up
+properly tracked. Thus we have a bit of process involved in tracking
+the lifecycle of a patch as it moves from a work-in-progress to a
+binary release. The life-cycle of a patch is:</p>
+<ul>
+<li>Create a new <code>wip-feature_name</code> branch in your personal repository
+while working on your feature. If you&#x27;re a regular contributor you
+can submit a pull request to add your repository to the list of places
+that <code>riscv-all</code> is generated from in
+<a href="https://github.com/riscv/riscv-linux-infra">riscv-linux-infra</a>.</li>
+<li>When you think your patch is in good enough shape to be merged
+upstream, submit it. You can either submit a pull request on github
+against <code>master</code>, or send a patch via email.</li>
+<li>The patch will be collected and merged upstream.</li>
+<li>If your patch should be backported to the upstream release branch,
+submit another pull request (against <code>binutils-2_30-branch</code>) or send
+another email (indicating it&#x27;s a backport) asking for the patch to be
+backported.</li>
+<li>If your patch shouldn&#x27;t be backported to the upstream release branch but
+should be backported to the RISC-V specific release branch (in this
+case <code>riscv-binutils-2.30</code>), submit another pull request against that
+branch with your patch.</li>
+<li>Eventually we will tag a RISC-V specific release with your patch in
+it, at which point it will be picked up by distributions (including
+the SiFive binary toolchain releases).</li>
+</ul>
+<p>While I&#x27;m trying to impose this flow on all the projects I&#x27;m heavily
+involved with, there are a few differences between the projects in order
+to adapt them to the relevent upstream development flows.</p>
+<h4 id="gnu-toolchain--binutils--gcc--and-glibc-">GNU Toolchain (binutils, GCC, and glibc)</h2>
+<p>The vast majority of the code for our toolchains, both for embedded
+systems (based on newlib) and Linux (based on glibc), has been committed
+upstream and lives at the relevant FSF repositories.  Specifically, that
+means:</p>
+<ul>
+<li>Our binutils port lives in the <a href="https://sourceware.org/git/gitweb.cgi?p=binutils-gdb.git">sourceware.org git
+repository</a>.
+In addition to binutils this repository contains the GDB and SIM
+ports, but we haven&#x27;t quite gotten those merged upstream yet so these
+still exist as backports in the <a href="https://github.com/riscv/riscv-binutils-gdb">RISC-V GitHub
+Repository</a>. In addition
+to the GDB and SIM ports, our GitHub repository also contains the
+RISC-V specific backport branches.</li>
+<li>Our GCC port lives in the <a href="https://gcc.gnu.org/viewcvs/gcc/">gcc.gnu.org SVN
+repository</a>. Aside from day-to-day
+work, our whole port can be found in this upstream repository. We
+additionally mantain a <a href="https://github.com/riscv/riscv-gcc">git mirror in the RISC-V
+GitHub</a>, which also contains our
+backport branches. Note that the main upstream development branch for
+GCC is called <code>trunk</code> instead of <code>master</code> because upstream uses
+subversion.</li>
+<li>Our glibc port lives in the <a href="https://sourceware.org/git/?p=glibc.git">sourceware.org git
+repository</a>.<br /></li>
+</ul>
+<p>The development flow for these projects is pretty straightforward: our
+ports are upstream and largely complete, and we do the vast majority of
+our development directly on the upstream master branches.  As such, you
+should really be able to expect to use the main development branches
+(either <code>master</code> or <code>trunk</code>) of all these repositories together and end
+up with a working system &ndash; or at least as working as you can expect
+when mixing together a bunch of development branches.</p>
+<p>Despite the vast majority of the RISC-V ports of the various toolchain
+repositories already having been merged upstream there&#x27;s still a lot of
+work that remains to be done. The work falls into three categories:</p>
+<ul>
+<li>Support for new RISC-V ISAs. This includes the E base ISA everywhere,
+the RV32I base ISA in glibc, and future ISAs like the V and J ISAs.
+This is very extensive toolchain work so it&#x27;s probably not a good
+place to get started.</li>
+<li>Support for new features and performance optimizations. Examples here
+would be GCC tunings, better linker relaxation and optimized glibc
+string routines. Some projects in here are good places to get
+started, but we generally need to have good benchmarks in order to
+demonstrate that an optimization actually helps.</li>
+<li>Fixes for bugs in our toolchain. Our test suite results are pretty
+good, so most of the bugs we find here will probably come from
+bringing up the RISC-V ports of various distributions. This is the
+best place to get started if you&#x27;re interested in contributing to the
+RISC-V toolchain effort.</li>
+</ul>
+<p>There is more information on how to get involved with the distribution
+porting effort below.</p>
+<h4 id="gdb">GDB</h2>
+<p>The RISC-V GDB port languished for a little while, but Andrew Burgess
+from Embecosm recently took over the port and progress has been rapid.
+Andrew submitted a patch to add RISC-V support to GDB last week, so
+hopefully we will soon be merged upstream, at which point we can treat
+our GDB port like a first-class member of the RISC-V software ecosystem!</p>
+<p>If you&#x27;re interested in contributing to the RISC-V GDB port then it&#x27;s
+probably best to hop on the code review process and help out directly
+upstream.</p>
+<h4 id="qemu">QEMU</h2>
+<p>Michael Clark has taken over as the primary maintainer of the RISC-V
+QEMU port since coming on board at SiFive. Over the past few months
+he&#x27;s managed to get QEMU up to the latest ISA specifications, fix a
+whole bunch of bugs, add new device models, and submit the code upstream
+for review multiple times.  We&#x27;re getting close to having something
+that&#x27;s suitable for merging upstream, so hopefully we&#x27;ll make the next
+release.</p>
+<p>Much like GDB, if you&#x27;re interested in helping out with QEMU then it&#x27;s
+probably best to help out with the code review process and work directly
+upstream.</p>
+<h4 id="linux">Linux</h2>
+<p>Linux 4.15, released toward the beginning of February, was the first
+upstream release that supported RISC-V. While this was a major
+milestone for RISC-V, there&#x27;s still a long way to go when it comes to
+getting a full Linux-based system up and running &ndash; essentially it boils
+down to missing device drivers, but we&#x27;re missing drivers for every
+device so you really can&#x27;t do much at all. Before we get into how to
+help bringing up our devices, it&#x27;s important to have some base knowledge
+about how the Linux development process works &ndash; it&#x27;s a little more
+complicated in Linux-land than in GNU-land because Linux releases more
+frequently and, as a result, has a more distributed development process.</p>
+<p>Linux development is much less centralized than the development of the
+GNU toolchain, and is probably much less centralized than any project
+you&#x27;re used to. In most projects, there is a canonical repository (maybe
+git or subversion) that contains the source code, and a set of
+developers that have write (or commit) access to that repository. Linux
+works a bit differently: there&#x27;s one public git repo that contains the
+canonical Linux source code, but only Linus has write access to that
+repository. Instead of allowing contributors to write directly to that
+repository, they&#x27;re expected to work in their own public git repository
+and submit pull requests to Linus. While this distributed model was
+really how git was designed to work, it&#x27;s an uncommon development flow,
+so if you&#x27;re not familiar with it then you might want to read up a bit
+on the Linux development flow. There are four repositories that are
+relevant for the RISC-V development flow:</p>
+<ul>
+<li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/">kernel.org&#x2F;torvalds&#x2F;linux.git</a>:
+The canonical Linux tree. The master branch on this repository is
+where releases come from, so it really defines Linux.</li>
+<li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/palmer/riscv-linux.git/">kernel.org&#x2F;palmer&#x2F;riscv-linux.git</a>:
+The RISC-V development tree. This tree owns everything under
+<code>arch&#x2F;riscv</code> and is where RISC-V specific pull requests come from.
+There are four branches in this tree, listed here in order of
+stability:
+    <em> <code>master</code>: a copy of Linus&#x27; master, up to the latest RC.
+<br /></em> <code>for-linus</code>: the RISC-V branch that&#x27;s pulled into Linus&#x27;
+      <code>master</code> branch.  Code in here is meant to be of the highest
+      quality, as it generally goes into <code>master</code> a few days after it
+      goes into <code>for-linus</code>.
+    <em> <code>for-next</code>: the RISC-V branch that&#x27;s pulled into <code>linux-next</code>.
+      This follows the standard <code>linux-next</code> rules, so it only
+      contains code that&#x27;s been reviewed and is essentially ready to
+      go. All commits that go into <code>for-linus</code> must go through
+      <code>for-next</code> first.
+<br /></em> <code>riscv-all</code>: the RISC-V integration branch, which contains all
+      work-in-progress patches. Since this tree contains
+      work-in-progress patches, it might not even compile, but as we
+      start to get more of our code upstream I hope to make this a
+      fairly stable branch.</li>
+<li><a href="https://git.kernel.org/pub/scm/linux/kernel/git/palmer/linux.git/">kernel.org&#x2F;palmer&#x2F;linux.git</a>:
+My personal Linux development tree. This contains the
+work-in-progress patches that I&#x27;ve picked up (and will eventually
+clean up and submit upstream) at various stages of development.
+Branches from this repository are automatically merged together to
+form <code>for-next</code> and <code>riscv-all</code> in the canonical RISC-V repository,
+and are eventually submitted to Linus.</li>
+<li><a href="https://github.com/riscv/riscv-linux.git">github.com&#x2F;riscv&#x2F;riscv-linux.git</a>:
+The old RISC-V development tree. This is largely defunct, but I still
+monitor pull requests in here and move them through the Linux kernel
+development flow.  If you&#x27;re most comfortable with using GitHub for
+development, then feel free to us this, but, if, you like use the
+standard Linux development flows </li>
+</ul>
+<p>In addition to these repositories we have
+<a href="http://lists.infradead.org/mailman/listinfo/linux-riscv">linux-riscv@lists.infradead.org</a>
+and <a href="http://webchat.freenode.net?randomnick=1&channels=%23linux-riscv&prompt=1&uio=d4">#linux-riscv on
+freenode</a>.</p>
+<h4 id="other-projects">Other Projects</h2>
+<p>In addition to the projects that I&#x27;m directly involved with, there are a
+handful of other projects that have RISC-V support upstream.  While I&#x27;m
+not an expert in how their development flows work, I thought it would be
+good to provide at least a quick overview of where development happens
+for other RISC-V projects:</p>
+<ul>
+<li>FreeBSD has a RISC-V port, and the <a href="https://wiki.freebsd.org/riscv">wiki
+page</a> appears to be high quality so
+it&#x27;s probably the best place to start.</li>
+<li>LLVM has a RISC-V port, which is led by Alex Bradbury from lowRISC.
+They have a <a href="http://www.lowrisc.org/llvm/status/">status page</a>, but I&#x27;m
+not sure it&#x27;s up to date, as the last update appears to be from
+September 2017. One specific item to note is that the RISC-V GitHub
+organization has an LLVM repo, but that&#x27;s unrelated to the real RISC-V
+LLVM port.</li>
+<li>Go has a RISC-V port that is being maintained out-of-tree on a <a href="https://github.com/riscv/riscv-go">RISC-V
+GitHub repository</a>. I&#x27;m not sure
+what the status is.</li>
+<li>The beginnings of an OpenJDK port exist, but it&#x27;s currently limited to
+mailing list posts. An <a href="https://content.riscv.org/wp-content/uploads/2017/12/Tue1412-riscv-java-2017-export.pdf">out-of-tree
+implementation</a>
+from Berkeley exists as well, at least as a slide set :).</li>
+<li>Newlib has RISC-V port that has been upstream for a while and has been
+released as a tarball. Kito Cheng maintains this port, along with
+some help from Jim Wilson at SiFive. Development for newlib happens
+upstream, and there&#x27;s a <a href="https://github.com/riscv/riscv-newlib">RISC-V GitHub
+repository</a> that contains
+various backport branches and work-in-progress features.</li>
+<li>Coreboot has a RISC-V port, but there doesn&#x27;t seem to be much new
+content on their <a href="https://blogs.coreboot.org/blog/tag/risc-v/">blog</a>
+about the RISC-V port. Jonathan Neuschäfer is in charge of the port.</li>
+<li>OpenEmbedded has the beginnings of a port for RISC-V, which is being
+led by Khem Raj. As far as I know, the most up-to-date RISC-V support
+lives on <a href="https://github.com/kraj/meta-riscv">Khem&#x27;s GitHub
+Repository</a>. There is also some
+amount of support merged into upstream OpenEmbedded, see the relevant
+<a href="http://lists.openembedded.org/pipermail/openembedded-core/2017-October/143072.html">pull
+request</a>.</li>
+<li>OpenWRT has an on-going RISC-V port, which is being led by Zoltan
+Herapi. I&#x27;m not sure where to find more information about this port.</li>
+<li>Debian has a RISC-V port in progress, and there&#x27;s a <a href="https://wiki.debian.org/RISC-V">wiki
+page</a> that describes the port and
+contains a progress log.</li>
+<li>Fedora has an on-going RISC-V port, which is in the bootstrap phase
+now. While I haven&#x27;t used it personally, Jim has used it and it works
+for him. They have extensive information on their <a href="https://fedoraproject.org/wiki/Architectures/RISC-V">wiki
+page</a>.</li>
+</ul>
+<p>If your favorite project isn&#x27;t listed here, then I&#x27;ve either managed to
+forget about it or there isn&#x27;t a port going on right now. The best way
+to find all RISC-V software developers is to post on the the <a href="https://groups.google.com/a/groups.riscv.org/forum/#!forum/sw-dev">software
+development mailing
+list</a>,
+or to hop into <a href="http://webchat.freenode.net?randomnick=1&channels=%23riscv&prompt=1&uio=d4">#riscv on
+freenode</a>.</p>
+
+    
+  </body>
+</html>

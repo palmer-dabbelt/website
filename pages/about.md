@@ -5,16 +5,15 @@ TITLE: Palmer Dabbelt's Homepage
 
 ![A photo of me](assets/me.jpeg)
 
-I am currently employed at SiFive.  While at SiFive I will be managing the
-RISC-V ports of various open source projects.  I currently maintain binutils
-and GCC, and I am in the process of submitting Linux and glibc ports (which I
-have offered to maintain).  In addition to these software projects, I
-write the ["All Aboard" blog series](http://sifive.com/blog).
+I am currently employed at Google.  While at SiFive I will be managing the
+RISC-V ports of various open source projects.  In addition to my work at
+Googel, I currently maintain binutils, GCC, Linux, glibc, and QEMU
+RISC-V ports.
 
-My [calendar](calendar.html) is available online and is
-generally kept up-to-date.  Green events signify that I need to be in the
-office, so I might need some time to get around.  If you would like to schedule
-an event, feel free to just pick a time and send me an email.
+My [calendar](calendar.html) is available online and is generally kept
+up-to-date.  Blue events signify that I need to be in the office, so I
+might need some time to get around.  If you would like to schedule a
+meeting then feel free to use the Calendly chooser.
 
 I can be reached by
 [email](mailto:palmer+about@dabbelt.com). I've

@@ -16,7 +16,7 @@ TITLE: Palmer Dabbelt's Calendar
 <!-- Calendly inline widget end -->
 
 <div id="google-calendar" style="width:50%;height:100%;float:left">
-<iframe src="https://www.google.com/calendar/embed?mode=WEEK&amp;height=600&amp;wkst=1&amp;bgcolor=%23FFFFFF&amp;src=palmer%40dabbelt.com&amp;color=%238C500B&amp;ctz=America%2FLos_Angeles&amp;src=palmer%40sifive.com&amp;color=%23125A12&amp;ctz=America%2FLos_Angeles&amp;src=pjnihaoooldnlu6bn9m97ohakc%40group.calendar.google.com&amp;color=%235F6B02&amp;ctz=America%2FLos_Angeles" style=" border-width:0 " frameborder="0" scrolling="no"></iframe>
+<iframe src="https://calendar.google.com/calendar/embed?height=600&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=America%2FLos_Angeles&amp;src=cGFsbWVyZGFiYmVsdEBnb29nbGUuY29t&amp;src=ZW4udXNhI2hvbGlkYXlAZ3JvdXAudi5jYWxlbmRhci5nb29nbGUuY29t&amp;src=cGFsbWVyQGRhYmJlbHQuY29t&amp;color=%2322AA99&amp;color=%231F753C&amp;color=%23AA5A00&amp;mode=WEEK" style="border-width:0" frameborder="0" scrolling="no"></iframe>
 </div>
 
 </div>

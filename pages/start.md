@@ -77,4 +77,4 @@ action="https://wiki.teamliquid.net/starcraft/index.php">
  .content { height: 100% }
 </style>
 
-<iframe src="https://calendar.google.com/calendar/b/1/embed?height=600&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=America%2FLos_Angeles&amp;src=cGFsbWVyQGRhYmJlbHQuY29t&amp;src=cGFsbWVyZGFiYmVsdEBnb29nbGUuY29t&amp;color=%23AA5A00&amp;color=%2322AA99&amp;mode=WEEK" style="border-width:0" frameborder="0" scrolling="no"></iframe>
+<iframe src="https://calendar.google.com/calendar/embed?height=600&amp;wkst=1&amp;bgcolor=%23ffffff&amp;ctz=America%2FLos_Angeles&amp;src=cGFsbWVyZGFiYmVsdEBnb29nbGUuY29t&amp;src=ZW4udXNhI2hvbGlkYXlAZ3JvdXAudi5jYWxlbmRhci5nb29nbGUuY29t&amp;src=cGFsbWVyQGRhYmJlbHQuY29t&amp;color=%2322AA99&amp;color=%231F753C&amp;color=%23AA5A00&amp;mode=WEEK" style="border-width:0" frameborder="0" scrolling="no"></iframe>

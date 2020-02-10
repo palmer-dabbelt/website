@@ -73,3 +73,11 @@ code is quite messy and should be cleaned up as part of adding Sv48
 support.  Ideally we would have support for both dynamically choosing
 Sv39 vs Sv48 (ie, at runtime) but also picking the supported paging
 depth at compile time.
+
+## LLVM Sanitizers
+
+The LLVM sanitizers (one of which is address sanitizer) are useful
+development tools, and while the port isn't upstream yet there have been
+various ports floating around for a while.  [A commit landed upstream in
+LLVM but was reverted](https://reviews.llvm.org/D66870), which is
+probably the best place to start.

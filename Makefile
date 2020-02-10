@@ -85,7 +85,7 @@ $(BUILD)/%.gpg: $(BUILD)/%
 	gpg --sign $<
 
 # Generates my GPG key
-$(BUILD)/palmer-dabbelt.gpg:
+$(BUILD)/palmer-dabbelt.gpg: $(wildcard $HOME/.gnupg/*)
 	gpg -a --export palmer@dabbelt.com > $@
 
 # Assets are copied directly from the repository

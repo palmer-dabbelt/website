@@ -3,56 +3,31 @@ TITLE: Palmer Dabbelt's List of Conferences
 
 # Conferences
 
-This website maintains a list of conferences that I know of and if I'm
-going.
+## FOSDEM: February 1st to 2nd, 2020 in Brussels
 
-## Going
+* I'm helping to run the [RISC-V
+  devroom](https://fosdem.org/2020/schedule/track/risc_v/), which is on
+  Saturday morning.
+* I'm in London before FOSDEM, so I'll probably arrive on Friday night.
+* I leave on Tuesday morning.
 
-These are the conferences I'm planning on attending.
+## Linaro Connect: March 23rd to 27th in Budapest
 
-### Linux Plumbers Conference
+* I'm arriving the Saturday before and leaving the Monday after.
 
-* Date: November 13th to November 15th, 2018
-* Location: Vancouver, Canada
-* Commitments: RISC-V microconference
+## ELC: June 22nd to 24th in Austin
 
-### RISC-V Summit
+* I went to ELC last year but didn't find it that useful so I might stop
+  going.  Sandeep suggested going, though, so we'll find out.
 
-* Date: December 3rd to December 6th, 2018
-* Location: San Jose, USA
-* Commitments: Security monitor talk
+## ELC Europe: October 26th to 28th in Dublin
 
-### FOSDEM
+* Haven't booked anything yet.
 
-* Date: February 2nd to February 3rd, 2019
-* Location: Brussles, Belgium
-* Commitments: RISC-V dev room
+## Linux Plumbers 2020
 
-## Not Going
+* Don't know the dates or location yet, probably September 2020?
 
-These are the conferences I know about and want to keep on the schedule,
-but for some reason am not attending.
+## GNU Tools Cauldron 2020
 
-## Undecided
-
-These are conferences that have been scheduled but I haven't decided
-about yet.
-
-## Not Yet Scheduled
-
-I keep these here as a reminder to myself so I don't miss anything.  If
-they're on the list then I probably intend to attend but just haven't
-seen the schedule yet, though nothing is fixed until I know exactly
-what's going on.
-
-### Embedded Linux Conference
-
-* Date: March, 2019
-
-### GNU Tools Cauldron
-
-* Date: August, 2019
-
-### Embedded Linux Conference Europe
-
-* Date: October, 2019
+* Don't know the dates or location yet, probably September 2020?

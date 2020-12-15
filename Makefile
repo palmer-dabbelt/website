@@ -21,6 +21,7 @@ all: \
 	$(addprefix $(BUILD)/,$(ASSETS)) \
 	$(addprefix $(BUILD)/,$(KEEP)) \
 	$(BUILD)/index.html \
+	$(BUILD)/blog.html \
 	$(BUILD)/resume.pdf \
 	$(BUILD)/resume.pdf.gpg \
 	$(BUILD)/palmer-dabbelt.gpg
@@ -61,9 +62,9 @@ $(BUILD)/blog/%.html: $(BUILD)/blog/%.md $(wildcard templates/*.html) $(BLOGC)
 
 $(BUILD)/blog/%.md: pages/blog/%.md
 	mkdir -p $(dir $@)
-	echo "DATE: $$(date -d "$$(basename "$<" .md | cut -d- -f1-3)" "+%B %d, %Y")" > $@
+	echo "DATE: $$(date -d "$$(basename "$<" .md | cut -d- -f1)" "+%B %e, %Y")" > $@
 	echo "BASENAME: $$(basename "$<" .md)" >> $@
-	cat "$^" >> "$@"
+	cat "$^" | sed 's/^#/##/g' >> "$@"
 
 # Builds PDF pages using pdflatex, or just fetches them if that's not
 # installed.  Since these don't change a whole lot this should be OK...
@@ -107,7 +108,7 @@ $(BUILD)/index.html: $(BUILD)/about.html
 $(BUILD)/blog.html: \
 		$(patsubst pages/%,$(BUILD)/%,$(wildcard pages/blog/*.md)) \
 		$(wildcard templates/*.html)
-	$(BLOGC) -a 2 -o $@ -t templates/multiblog.html $(sort $(filter %.md,$^))
+	$(BLOGC) -o $@ -t templates/multiblog.html $(sort $(filter %.md,$^))
 
 # Removes everything that's been built
 .PHONY: clean

@@ -23,3 +23,6 @@ I can be reached by
 also uploaded my [resume](resume.pdf), but since I'm not currently
 looking for a job it's probably fairly out of date.  My [GPG
 key](palmer-dabbelt.gpg) is also available.
+
+<p>I also have a Fediverse at <a href="https://social.kernel.org/palmer"
+rel=me>social.kernel.org</a> and am usually on Libera.Chat and OFTC.</p>

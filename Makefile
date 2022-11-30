@@ -60,7 +60,7 @@ $(BUILD)/blog/%.html: $(BUILD)/blog/%.md $(wildcard templates/*.html) $(BLOGC)
 	mkdir -p $(dir $@)
 	$(BLOGC) -o $@ -t templates/$(lastword $(subst /, ,$(dir $<))).html $(sort $<)
 
-$(BUILD)/blog/%.md: pages/blog/%.md
+$(BUILD)/blog/%.md: pages/blog/%.md $(BLOGC)
 	mkdir -p $(dir $@)
 	echo "DATE: $$(date -d "$$(basename "$<" .md | cut -d- -f1)" "+%B %e, %Y")" > $@
 	echo "BASENAME: $$(basename "$<" .md)" >> $@
@@ -107,7 +107,8 @@ $(BUILD)/index.html: $(BUILD)/about.html
 # I'm going to start a blog!
 $(BUILD)/blog.html: \
 		$(patsubst pages/%,$(BUILD)/%,$(wildcard pages/blog/*.md)) \
-		$(wildcard templates/*.html)
+		$(wildcard templates/*.html) \
+		$(BLOGC)
 	$(BLOGC) -o $@ -t templates/multiblog.html $(sort $(filter %.md,$^))
 
 # Removes everything that's been built

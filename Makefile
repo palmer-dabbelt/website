@@ -126,7 +126,7 @@ distclean:
 install: install-nfshost
 
 install-nfshost: all
-	rsync -av --delete build/ palmer_dabbelt@ssh.phx.nearlyfreespeech.net:~palmer/
+	rsync -av --delete build/ palmer_dabbelt@ssh.nyc1.nearlyfreespeech.net:~palmer/
 
 # Shows the website in your browser of choice
 .PHONY: view

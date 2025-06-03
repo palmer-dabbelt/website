@@ -102,7 +102,7 @@ $(BUILD)/keep/%: keep/%
 # way for me to do that is to simply install it twice.
 $(BUILD)/index.html: $(BUILD)/about.html
 	@mkdir -p $(dir $@)
-	cp --reflink=auto $< $@
+	cp $< $@
 
 # I'm going to start a blog!
 $(BUILD)/blog.html: \

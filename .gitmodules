@@ -1,0 +1,3 @@
+[submodule "tools/src/blogc"]
+	path = tools/src/blogc
+	url = https://github.com/blogc/blogc.git

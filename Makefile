@@ -22,34 +22,25 @@ all: \
 	$(addprefix $(BUILD)/,$(KEEP)) \
 	$(BUILD)/index.html \
 	$(BUILD)/blog.html \
-	$(BUILD)/resume.pdf \
-	$(BUILD)/resume.pdf.gpg \
-	$(BUILD)/palmer-dabbelt.gpg
+	$(BUILD)/resume.pdf
 
 # Ensure I actually have the required program, if I don't then install thems
 ifeq ($(BLOGC),)
 BLOGC := tools/bin/blogc
 endif
 
-BLOGC_VERSION ?= 0.20.1
-BLOGC_URL ?= https://github.com/blogc/blogc/releases/download/v$(BLOGC_VERSION)/blogc-$(BLOGC_VERSION).tar.gz
 tools/bin/blogc: tools/src/blogc/build/blogc
 	@mkdir -p $(dir $@)
-	cp -f $< $@
+	$(MAKE) -C $(dir $<) install
+	touch -c $@
 tools/src/blogc/build/blogc: tools/src/blogc/build/Makefile
-	$(MAKE) -C $(dir $@)
-tools/src/blogc/build/Makefile: tools/src/blogc/stamp
+	$(MAKE) -C $(dir $<)
+	touch -c $@
+tools/src/blogc/build/Makefile:
 	@rm -rf $(dir $@)
 	@mkdir -p $(dir $@)
-	cd $(dir $@) && ../configure
-tools/src/blogc/stamp: \
-		tools/src/blogc-$(BLOGC_VERSION).tar.gz
-	mkdir -p $(dir $@)
-	tar -xzC $(dir $@) -f $< --strip-components=1
-	touch $@
-tools/src/blogc-$(BLOGC_VERSION).tar.gz:
-	@mkdir -p $(dir $@)
-	$(WGET) $(BLOGC_URL) -O $@
+	cmake -B $(dir $@) -S $(dir $<) -DCMAKE_INSTALL_PREFIX=$(abspath tools/bin)
+	touch -c $@
 
 # Builds HTML pages using blogc
 $(BUILD)/%.html: pages/%.md $(wildcard templates/*.html) $(BLOGC)
@@ -83,11 +74,10 @@ endif
 # Signs essentially anything.
 $(BUILD)/%.gpg: $(BUILD)/%
 	@rm -f $@
-	gpg --sign $<
 
 # Generates my GPG key
-$(BUILD)/palmer-dabbelt.gpg: $(wildcard $HOME/.gnupg/*)
-	gpg -a --export palmer@dabbelt.com > $@
+#$(BUILD)/palmer-dabbelt.gpg: $(wildcard $HOME/.gnupg/*)
+#	gpg -a --export palmer@dabbelt.com > $@
 
 # Assets are copied directly from the repository
 $(BUILD)/assets/%: assets/%
@@ -114,7 +104,7 @@ $(BUILD)/blog.html: \
 # Removes everything that's been built
 .PHONY: clean
 clean:
-	rm -rf build .latex_cache
+	rm -rf build .latex_cache tools/src/blogc/build/
 .PHONY: distclean
 distclean:
 	$(MAKE) clean

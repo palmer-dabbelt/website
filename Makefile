@@ -29,17 +29,17 @@ ifeq ($(BLOGC),)
 BLOGC := tools/bin/blogc
 endif
 
-tools/bin/blogc: tools/src/blogc/build/blogc
+tools/bin/blogc: tools/src/blogc/build/src/blogc/blogc
 	@mkdir -p $(dir $@)
-	$(MAKE) -C $(dir $<) install
+	$(MAKE) -C tools/src/blogc/build install
 	touch -c $@
-tools/src/blogc/build/blogc: tools/src/blogc/build/Makefile
+tools/src/blogc/build/src/blogc/blogc: tools/src/blogc/build/Makefile
 	$(MAKE) -C $(dir $<)
 	touch -c $@
 tools/src/blogc/build/Makefile:
 	@rm -rf $(dir $@)
 	@mkdir -p $(dir $@)
-	cmake -B $(dir $@) -S $(dir $<) -DCMAKE_INSTALL_PREFIX=$(abspath tools/bin)
+	cmake -B $(dir $@) -S tools/src/blogc -DCMAKE_INSTALL_PREFIX=$(abspath tools/)
 	touch -c $@
 
 # Builds HTML pages using blogc
@@ -53,9 +53,8 @@ $(BUILD)/blog/%.html: $(BUILD)/blog/%.md $(wildcard templates/*.html) $(BLOGC)
 
 $(BUILD)/blog/%.md: pages/blog/%.md $(BLOGC)
 	mkdir -p $(dir $@)
-	echo "DATE: $$(date -d "$$(basename "$<" .md | cut -d- -f1)" "+%B %e, %Y")" > $@
 	echo "BASENAME: $$(basename "$<" .md)" >> $@
-	cat "$^" | sed 's/^#/##/g' >> "$@"
+	cat "$<" | sed 's/^#/##/g' >> "$@"
 
 # Builds PDF pages using pdflatex, or just fetches them if that's not
 # installed.  Since these don't change a whole lot this should be OK...

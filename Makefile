@@ -50,7 +50,7 @@ $(BUILD)/blog/%.html: $(BUILD)/blog/%.md $(wildcard templates/*.html) $(BLOGC)
 
 $(BUILD)/blog/%.md: pages/blog/%.md $(BLOGC)
 	mkdir -p $(dir $@)
-	echo "BASENAME: $$(basename "$<" .md)" >> $@
+	echo "BASENAME: $$(basename "$<" .md)" > $@
 	cat "$<" | sed 's/^#/##/g' >> "$@"
 
 # Builds PDF pages using pdflatex, or just fetches them if that's not

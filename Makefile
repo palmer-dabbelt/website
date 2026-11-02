@@ -2,7 +2,6 @@ AUTHOR_NAME = "Palmer Dabbelt"
 AUTHOR_EMAIL = "palmer@dabbelt.com"
 LOCALE = "en_US.utf-8"
 
-BLOGC ?= $(shell which blogc 2> /dev/null)
 INSTALL ?= $(shell which rsync 2> /dev/null)
 WGET ?= $(shell which wget 2> /dev/null)
 PDFLATEX ?= $(shell which pdflatex 2> /dev/null)
@@ -25,9 +24,7 @@ all: \
 	$(BUILD)/resume.pdf
 
 # Ensure I actually have the required program, if I don't then install thems
-ifeq ($(BLOGC),)
 BLOGC := tools/bin/blogc
-endif
 
 tools/bin/blogc: tools/src/blogc/build/src/blogc/blogc
 	@mkdir -p $(dir $@)
